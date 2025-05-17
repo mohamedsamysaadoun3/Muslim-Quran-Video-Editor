@@ -1,148 +1,165 @@
 // js/ui/panel-manager.js
-import { DOMElements } from '../core/dom-loader.js';
+import { getElement, $$ } from '../core/dom-loader.js';
+import eventBus from '../core/event-bus.js';
+import { getCurrentProject } from '../core/state-manager.js';
 
-let activePanelId = null;
+
+const mainBottomTabBar = getElement('main-bottom-tab-bar');
+const controlPanelsContainer = getElement('active-control-panels-container');
+let tabButtons = [];
+let controlPanels = [];
+let currentOpenPanelId = null;
 
 /**
- * Initializes the panel manager.
- * Ensures all panels are hidden initially and sets the first tab as active (e.g., Quran).
+ * يهيئ مدير اللوحات عن طريق العثور على أزرار التبويب واللوحات.
  */
-export function initPanelManager() {
-    closeAllPanels(); // Ensure all are hidden
-    // Optionally, open a default panel. e.g., Quran panel
-    if (DOMElements.mainTabButtons && DOMElements.mainTabButtons.length > 0) {
-        const defaultPanelId = DOMElements.mainTabButtons[0].dataset.targetPanel;
-        if (defaultPanelId) {
-            // openPanel(defaultPanelId); // Let user open it explicitly or app.js can decide.
-            // For now, ensure first tab button looks active if we want a default open panel.
-             // DOMElements.mainTabButtons[0].classList.add('active');
-        }
+export function initializePanelManager() {
+    if (!mainBottomTabBar || !controlPanelsContainer) {
+        console.error("لم يتم العثور على العناصر الأساسية لمدير اللوحات (شريط التبويب أو حاوية اللوحات).");
+        return;
     }
-    console.log("[Panel Manager] Initialized.");
+
+    tabButtons = Array.from($$('.main-tab-button', mainBottomTabBar));
+    controlPanels = Array.from($$('.control-panel', controlPanelsContainer));
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => handleTabButtonClick(button));
+    });
+
+    controlPanels.forEach(panel => {
+        const closeButton = $('.panel-action-button.close-panel-btn', panel);
+        const confirmButton = $('.panel-action-button.confirm-panel-btn', panel);
+
+        if (closeButton) {
+            closeButton.addEventListener('click', () => closePanel(panel.id));
+        }
+        if (confirmButton) { // أزرار التأكيد عادةً ما تغلق اللوحة أيضًا
+            confirmButton.addEventListener('click', () => {
+                // اختياريًا، أطلق حدثًا يفيد بأن هذه اللوحة قد تم تأكيدها
+                eventBus.emit(`${panel.id}Confirmed`, getCurrentProject());
+                closePanel(panel.id); // أغلق اللوحة بعد التأكيد
+            });
+        }
+    });
+
+    // في البداية، قد تكون هناك لوحة نشطة بناءً على HTML أو الحالة الافتراضية
+    const activeTab = tabButtons.find(btn => btn.classList.contains('active'));
+    if (activeTab) {
+        const targetPanelId = activeTab.dataset.targetPanel;
+        if (targetPanelId) openPanel(targetPanelId); // تأكد من وجود targetPanelId
+    } else if (tabButtons.length > 0 && tabButtons[0].dataset.targetPanel) {
+        // فتح أول تبويب بشكل افتراضي إذا لم يكن هناك أي تبويب نشط وكان لديه targetPanel
+        handleTabButtonClick(tabButtons[0]);
+    }
+}
+
+function handleTabButtonClick(button) {
+    const targetPanelId = button.dataset.targetPanel;
+
+    if (!targetPanelId) {
+        console.warn('تم النقر على زر تبويب بدون السمة data-target-panel:', button);
+        return;
+    }
+
+    // إذا تم النقر على نفس التبويب وكانت لوحته مفتوحة بالفعل، أغلقها (سلوك اختياري)
+    // أو، إذا كانت لوحة من نوع "تأكيد"، ربما لا تفعل شيئًا أو أعد التركيز.
+    // حاليًا، إذا كانت اللوحة مفتوحة، فإن النقر مرة أخرى سيغلقها.
+    if (currentOpenPanelId === targetPanelId && getPanelElement(targetPanelId)?.classList.contains('visible')) {
+        closePanel(targetPanelId);
+        button.classList.remove('active'); // إلغاء تنشيط زر التبويب
+    } else {
+        openPanel(targetPanelId);
+        // تحديث الحالة النشطة لأزرار التبويب
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+    }
 }
 
 /**
- * Opens a specific control panel and sets the corresponding tab button as active.
- * @param {string} panelId - The ID of the panel to open.
+ * يفتح لوحة تحكم معينة.
+ * @param {string} panelId - معرف اللوحة المراد فتحها.
  */
 export function openPanel(panelId) {
-    if (activePanelId === panelId) return; // Already open
+    if (!panelId) return;
 
-    closeAllPanels(); // Close any currently open panel
+    let panelFound = false;
+    controlPanels.forEach(panel => {
+        if (panel.id === panelId) {
+            // لا تقم بالتحريك إذا كانت اللوحة مفتوحة بالفعل ومرئية
+            if (!panel.classList.contains('visible')) {
+                panel.classList.add('visible'); // سيؤدي هذا إلى تشغيل التحريك CSS
+                eventBus.emit('panelOpened', panelId);
+            }
+            panelFound = true;
+            currentOpenPanelId = panelId;
+        } else {
+            panel.classList.remove('visible'); // إخفاء اللوحات الأخرى
+        }
+    });
 
-    const panelToOpen = document.getElementById(panelId); // DOMElements might not have individual panels by ID directly if many
-    const correspondingTabButton = Array.from(DOMElements.mainTabButtons || []).find(
-        (btn) => btn.dataset.targetPanel === panelId
-    );
-
-    if (panelToOpen) {
-        panelToOpen.classList.add('visible');
-        activePanelId = panelId;
-        console.log(`[Panel Manager] Opened panel: ${panelId}`);
-    } else {
-        console.warn(`[Panel Manager] Panel with ID "${panelId}" not found.`);
+    if (!panelFound) {
+        console.warn(`لم يتم العثور على لوحة بالمعرف '${panelId}'.`);
+        currentOpenPanelId = null;
     }
 
-    if (correspondingTabButton) {
-        correspondingTabButton.classList.add('active');
-    }
+    // تحديث زر التبويب النشط
+    tabButtons.forEach(btn => {
+        if (btn.dataset.targetPanel === panelId && panelFound) { // تأكد من العثور على اللوحة قبل تنشيط التبويب
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
 }
 
 /**
- * Closes a specific control panel and deactivates its tab button.
- * @param {string} panelId - The ID of the panel to close.
+ * يغلق لوحة تحكم معينة أو اللوحة المفتوحة حاليًا.
+ * @param {string} [panelId] - معرف اللوحة المراد إغلاقها. إذا كان null، يغلق اللوحة المفتوحة حاليًا.
  */
 export function closePanel(panelId) {
-    const panelToClose = document.getElementById(panelId);
-    const correspondingTabButton = Array.from(DOMElements.mainTabButtons || []).find(
-        (btn) => btn.dataset.targetPanel === panelId
-    );
+    const idToClose = panelId || currentOpenPanelId;
+    if (!idToClose) return;
 
-    if (panelToClose) {
-        panelToClose.classList.remove('visible');
-        if (activePanelId === panelId) {
-            activePanelId = null;
+    const panelToClose = controlPanels.find(p => p.id === idToClose);
+    if (panelToClose && panelToClose.classList.contains('visible')) {
+        panelToClose.classList.remove('visible'); // سيؤدي هذا إلى تشغيل التحريك CSS للإخفاء
+        eventBus.emit('panelClosed', idToClose);
+
+        if (currentOpenPanelId === idToClose) {
+            currentOpenPanelId = null;
+            // إلغاء تنشيط زر التبويب المقابل
+            tabButtons.forEach(btn => {
+                if (btn.dataset.targetPanel === idToClose) {
+                    btn.classList.remove('active');
+                }
+            });
         }
-        console.log(`[Panel Manager] Closed panel: ${panelId}`);
-    }
-
-    if (correspondingTabButton) {
-        correspondingTabButton.classList.remove('active');
     }
 }
 
 /**
- * Closes all currently open control panels and deactivates all tab buttons.
+ * يغلق جميع لوحات التحكم المفتوحة.
  */
 export function closeAllPanels() {
-    if (DOMElements.controlPanels) {
-        DOMElements.controlPanels.forEach(panel => {
+    controlPanels.forEach(panel => {
+        if (panel.classList.contains('visible')) {
             panel.classList.remove('visible');
-        });
-    }
-    if (DOMElements.mainTabButtons) {
-        DOMElements.mainTabButtons.forEach(btn => {
-            btn.classList.remove('active');
-        });
-    }
-    activePanelId = null;
-    // console.log("[Panel Manager] All panels closed.");
+        }
+    });
+    tabButtons.forEach(btn => btn.classList.remove('active'));
+    currentOpenPanelId = null;
+    eventBus.emit('allPanelsClosed');
 }
 
 /**
- * Sets up event listeners for main tab buttons and panel close/confirm buttons.
+ * يحصل على معرف اللوحة المفتوحة حاليًا.
+ * @returns {string|null}
  */
-export function setupPanelEventListeners() {
-    // Main Tab Buttons
-    if (DOMElements.mainTabButtons) {
-        DOMElements.mainTabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const targetPanelId = button.dataset.targetPanel;
-                if (targetPanelId) {
-                    if (activePanelId === targetPanelId && button.classList.contains('active')) {
-                        // If the active tab is clicked again, close its panel
-                        closePanel(targetPanelId);
-                    } else {
-                        openPanel(targetPanelId);
-                    }
-                }
-            });
-        });
-    }
+export function getCurrentOpenPanelId() {
+    return currentOpenPanelId;
+}
 
-    // Panel Close Buttons (X icon in panel header)
-    if (DOMElements.panelCloseButtons) {
-        DOMElements.panelCloseButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const panelId = button.dataset.panelid; // Ensure data-panelid is on the button
-                if (panelId) {
-                    closePanel(panelId);
-                } else {
-                    // Fallback if data-panelid is missing, try to find parent panel
-                    const parentPanel = button.closest('.control-panel');
-                    if (parentPanel) closePanel(parentPanel.id);
-                }
-            });
-        });
-    }
-
-    // Panel Confirm Buttons (Checkmark icon in panel header, e.g., for Quran panel)
-    if (DOMElements.panelConfirmButtons) {
-        DOMElements.panelConfirmButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                // Action on confirm (e.g., validation) could be handled by publishing an event
-                // or by specific module listeners if the button has a more specific ID/class.
-                // For now, it just closes the panel.
-                const panelId = button.dataset.panelid;
-                if (panelId) {
-                    // Potentially trigger an update or validation before closing
-                    // For example, if it's the quran panel, ensure ayahs are reloaded.
-                    // This might involve a callback or an event.
-                    // import { publish } from '../core/event-bus.js';
-                    // publish(`${panelId}-confirmed`);
-                    closePanel(panelId);
-                }
-            });
-        });
-    }
+// توفير طريقة للحصول على عنصر اللوحة نفسه إذا لزم الأمر
+export function getPanelElement(panelId) {
+    return controlPanels.find(p => p.id === panelId);
 }
