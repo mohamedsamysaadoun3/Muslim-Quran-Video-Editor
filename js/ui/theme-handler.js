@@ -1,65 +1,87 @@
 // js/ui/theme-handler.js
-import { DOMElements } from '../core/dom-loader.js';
-import { saveThemePreference, loadThemePreference } from '../services/local-storage-service.js';
+import { LOCAL_STORAGE_THEME_KEY } from '../config/constants.js';
+import { getItem, setItem } from '../services/local-storage-service.js';
+import { getElement } from '../core/dom-loader.js';
+import eventBus from '../core/event-bus.js';
 
-const LIGHT_THEME_CLASS = 'light-theme';
-const DARK_THEME_CLASS = 'dark-theme';
+const body = document.body;
+const themeToggleInitialBtn = getElement('theme-toggle-initial');
+const themeToggleEditorBtn = getElement('theme-toggle-editor');
+
+const THEME_DARK = 'dark-theme';
+const THEME_LIGHT = 'light-theme'; // السمة الفاتحة هي الافتراضية، لا تحتاج إلى كلاس خاص أو كلاس 'light-theme'
 
 /**
- * Initializes the theme by loading the preference from localStorage or defaulting to light.
+ * يطبق السمة المحددة على body.
+ * @param {string} theme - السمة المراد تطبيقها ('dark-theme' أو 'light-theme').
  */
-export function initTheme() {
-    const savedTheme = loadThemePreference();
-    if (savedTheme === DARK_THEME_CLASS) {
-        document.body.classList.add(DARK_THEME_CLASS);
-        document.body.classList.remove(LIGHT_THEME_CLASS);
+function applyTheme(theme) {
+    body.classList.remove(THEME_DARK, THEME_LIGHT); // إزالة الكلاسات القديمة أولاً
+    if (theme === THEME_DARK) {
+        body.classList.add(THEME_DARK);
     } else {
-        // Default to light theme if no preference or if it's light
-        document.body.classList.add(LIGHT_THEME_CLASS);
-        document.body.classList.remove(DARK_THEME_CLASS);
+        body.classList.add(THEME_LIGHT); // أو إزالة dark-theme إذا كان الفاتح هو غياب dark-theme
     }
-    updateThemeButtonText();
-    console.log("[Theme Handler] Theme initialized to:", document.body.classList.contains(DARK_THEME_CLASS) ? "Dark" : "Light");
+
+    // تحديث نص/أيقونة الزر (مثال باستخدام الرموز التعبيرية)
+    const icon = theme === THEME_DARK ? '☀️' : '🌓';
+    if (themeToggleInitialBtn) themeToggleInitialBtn.textContent = icon;
+    if (themeToggleEditorBtn) themeToggleEditorBtn.textContent = icon;
+
+    // حفظ التفضيل
+    setItem(LOCAL_STORAGE_THEME_KEY, theme);
+    eventBus.emit('themeChanged', theme); // إطلاق حدث عند تغيير السمة
 }
 
 /**
- * Toggles the theme between light and dark.
+ * يبدل بين السمات الفاتحة والداكنة.
  */
-function toggleTheme() {
-    const isDark = document.body.classList.toggle(DARK_THEME_CLASS);
-    document.body.classList.toggle(LIGHT_THEME_CLASS, !isDark);
-
-    const newTheme = isDark ? DARK_THEME_CLASS : LIGHT_THEME_CLASS;
-    saveThemePreference(newTheme);
-    updateThemeButtonText();
-    console.log("[Theme Handler] Theme toggled to:", newTheme);
+export function toggleTheme() {
+    const currentThemeIsDark = body.classList.contains(THEME_DARK);
+    applyTheme(currentThemeIsDark ? THEME_LIGHT : THEME_DARK);
 }
 
 /**
- * Updates the text/icon of the theme toggle buttons.
+ * يهيئ السمة بناءً على التفضيل المحفوظ أو تفضيل النظام.
  */
-function updateThemeButtonText() {
-    const isDark = document.body.classList.contains(DARK_THEME_CLASS);
-    const icon = isDark ? '☀️' : '🌓'; // Sun for dark mode (to switch to light), Moon for light mode
+export function initializeTheme() {
+    let preferredTheme = getItem(LOCAL_STORAGE_THEME_KEY);
 
-    if (DOMElements.themeToggleInitial) {
-        DOMElements.themeToggleInitial.textContent = icon;
-        DOMElements.themeToggleInitial.title = isDark ? "التبديل إلى الثيم الفاتح" : "التبديل إلى الثيم الداكن";
+    if (!preferredTheme) {
+        // التحقق من تفضيل النظام إذا لم يتم حفظ تفضيل المستخدم
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            preferredTheme = THEME_DARK;
+        } else {
+            preferredTheme = THEME_LIGHT; // الافتراضي إلى الفاتح
+        }
     }
-    if (DOMElements.themeToggleEditor) {
-        DOMElements.themeToggleEditor.textContent = icon;
-        DOMElements.themeToggleEditor.title = isDark ? "التبديل إلى الثيم الفاتح" : "التبديل إلى الثيم الداكن";
+    applyTheme(preferredTheme);
+
+    // الاستماع لتغييرات تفضيل النظام
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        const newSystemTheme = e.matches ? THEME_DARK : THEME_LIGHT;
+        // طبق سمة النظام فقط إذا لم يتم تعيين تفضيل المستخدم بشكل صريح،
+        // أو يمكنك أن تقرر دائمًا اتباع النظام إذا لم يقم المستخدم بالتبديل يدويًا بعد.
+        // للتبسيط، لنفترض أنه إذا قام المستخدم بالفعل بتعيين واحدة، فإننا نحتفظ بها.
+        // إذا كنت تريده أن يتكيف دائمًا حتى أول تبديل يدوي:
+        if (!getItem(LOCAL_STORAGE_THEME_KEY)) { // اتبع النظام فقط إذا لم يختر المستخدم سمة بنفسه
+           applyTheme(newSystemTheme);
+        }
+    });
+
+    // إضافة مستمعي الأحداث إلى الأزرار
+    if (themeToggleInitialBtn) {
+        themeToggleInitialBtn.addEventListener('click', toggleTheme);
+    }
+    if (themeToggleEditorBtn) {
+        themeToggleEditorBtn.addEventListener('click', toggleTheme);
     }
 }
 
 /**
- * Sets up event listeners for the theme toggle buttons.
+ * يحصل على السمة الحالية.
+ * @returns {string} 'dark-theme' أو 'light-theme'.
  */
-export function setupThemeEventListeners() {
-    if (DOMElements.themeToggleInitial) {
-        DOMElements.themeToggleInitial.addEventListener('click', toggleTheme);
-    }
-    if (DOMElements.themeToggleEditor) {
-        DOMElements.themeToggleEditor.addEventListener('click', toggleTheme);
-    }
+export function getCurrentTheme() {
+    return body.classList.contains(THEME_DARK) ? THEME_DARK : THEME_LIGHT;
 }
