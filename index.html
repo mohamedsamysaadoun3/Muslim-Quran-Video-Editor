@@ -12,10 +12,17 @@
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Quran Editor">
-  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+  <meta name="apple-mobile-web-app-title" content="محرر القرآن"> <!-- اسم مختصر لـ iOS -->
+  
+  <!-- Favicon and Apple Touch Icon -->
+  <link rel="icon" href="favicon.ico" type="image/x-icon"> <!-- Favicon من المجلد الجذر -->
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"> <!-- Favicon احتياطي -->
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180x180.png"> <!-- Apple Touch Icon من مجلد icons -->
+  
+  <!-- أيقونات أخرى من manifest.json سيتم استخدامها بواسطة الأنظمة الداعمة لـ PWA -->
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.png">
+  
   <meta name="theme-color" content="#00796b"> <!-- لون السمة الرئيسي -->
 
   <!-- Font Awesome for Icons -->
@@ -53,7 +60,7 @@
 
     <!-- شاشة المحرر الرئيسية -->
     <div id="editor-screen" class="screen" style="display:none;">
-      <header class="editor-top-bar"> <!-- استخدام نفس اسم الكلاس إذا كان التصميم مشتركًا -->
+      <header class="editor-top-bar">
         <button id="back-to-initial-screen-btn" class="icon-button" title="العودة للقائمة الرئيسية"><i class="fas fa-arrow-left"></i></button>
         <h2 id="current-project-title-editor" class="project-title-editable" contenteditable="false" spellcheck="false" title="اضغط للتعديل">مشروع جديد</h2>
         <div class="editor-top-actions">
@@ -65,13 +72,12 @@
       <main id="editor-main-area-new">
         <div id="video-preview-container">
           <canvas id="video-preview-canvas"></canvas>
-          <!-- تراكب HTML للنص (يمكن إخفاؤه إذا كان الرسم على الكانفاس هو المفضل للمعاينة) -->
-          <div id="preview-overlay-content" style="pointer-events: none;"> <!-- pointer-events: none للسماح بالتفاعل مع الكانفاس إذا لزم الأمر -->
+          <div id="preview-overlay-content" style="pointer-events: none;">
             <h2 id="preview-surah-title-overlay" class="arabic-text"></h2>
             <div id="preview-ayah-text-overlay" class="arabic-text"></div>
             <div id="preview-translation-text-overlay" class="translation-text-overlay"></div>
           </div>
-          <audio id="main-audio-player" style="display:none;"></audio> <!-- مشغل الصوت الرئيسي المخفي -->
+          <audio id="main-audio-player" style="display:none;"></audio>
         </div>
 
         <section id="playback-timeline-section">
@@ -90,7 +96,6 @@
         </section>
       </main>
 
-      <!-- منطقة لوحات التحكم (سيتم عرضها/إخفاؤها فوق شريط التبويب السفلي) -->
       <div id="active-control-panels-container">
         <!-- لوحة اختيار القرآن -->
         <div id="quran-selection-panel" class="control-panel">
@@ -122,9 +127,7 @@
             <div><label for="import-background">استيراد خلفية (صورة/فيديو):</label><input type="file" id="import-background" accept="image/*,video/*" title="اختر ملف صورة أو فيديو كخلفية"></div>
             <button id="apply-ai-bg" class="control-button" title="اقتراح خلفيات مناسبة باستخدام الذكاء الاصطناعي">اقتراح خلفية (AI)</button>
             <div id="ai-bg-suggestions-loader" style="display:none;">جاري تحميل الاقتراحات...</div>
-            <div id="ai-bg-suggestions">
-                <!-- سيتم حقن صور الاقتراحات هنا -->
-            </div>
+            <div id="ai-bg-suggestions"></div>
              <hr class="panel-divider">
              <div><label for="background-color-picker">أو اختر لون خلفية:</label><input type="color" id="background-color-picker" value="#2c3e50" title="اختر لونًا ثابتًا للخلفية"></div>
           </div>
@@ -148,7 +151,6 @@
              <h4>إعدادات التلاوة</h4>
             <div id="audio-preview-status-text" style="text-align:center; margin: 5px 0; min-height: 1.2em; font-size: 0.85em; color: var(--current-text-secondary-color)"></div>
             <div><label for="delay-between-ayahs">تأخير بين الآيات (ثواني):</label><input type="number" id="delay-between-ayahs" value="1" min="0" max="10" step="0.1" title="حدد مدة التأخير بين تلاوة كل آية والأخرى"></div>
-            <!-- المزيد من إعدادات الصوت مثل مستوى صوت التلاوة، مستوى صوت موسيقى الخلفية -->
           </div>
         </div>
 
@@ -183,7 +185,6 @@
               <option value="'Amiri Quran', serif">Amiri Quran</option>
               <option value="'Noto Naskh Arabic', serif">Noto Naskh Arabic</option>
               <option value="'Tajawal', sans-serif">Tajawal</option>
-              <!-- يمكن إضافة المزيد من الخطوط لاحقًا -->
             </select></div>
             <div><label for="font-size-slider">حجم الخط:</label>
                 <div style="display:flex; align-items:center; gap:10px;">
@@ -196,7 +197,6 @@
                 <option value="none">بدون تأثير</option>
                 <option value="fade">تلاشي</option>
                 <option value="typewriter">كتابة تدريجية</option>
-                <!-- يمكن إضافة المزيد من تأثيرات النص لاحقًا -->
             </select></div>
           </div>
         </div>
@@ -215,9 +215,8 @@
               </select></div>
               <div><label for="video-format-select">صيغة الفيديو:</label><select id="video-format-select" title="اختر صيغة ملف الفيديو المصدر">
                 <option value="webm" selected>WebM (جودة عالية، حجم أصغر)</option>
-                <option value="mp4">MP4 (توافق أوسع، يتطلب FFmpeg.wasm)</option>
+                <option value="mp4">MP4 (توافق أوسع)</option>
                 <option value="gif">GIF (متحرك، بدون صوت)</option>
-                <!-- <option value="png">PNG Sequence (صور متتالية، للتصدير المتقدم)</option> -->
               </select></div>
               <div><label for="framerate-select">معدل الإطارات (FPS):</label><select id="framerate-select" title="اختر معدل الإطارات في الثانية للفيديو المصدر">
                 <option value="24">24 إطار/ثانية (سينمائي)</option>
@@ -225,10 +224,6 @@
                 <option value="30">30 إطار/ثانية (NTSC)</option>
                 <option value="60">60 إطار/ثانية (سلس جدًا)</option>
               </select></div>
-              <!-- <div><label for="transition-select">تأثير انتقالي بين الآيات:</label><select id="transition-select" title="اختر تأثيرًا انتقاليًا بين الآيات (قيد الإنشاء)">
-                <option value="none">بدون</option>
-                <option value="fade">تلاشي</option>
-              </select></div> -->
               <button id="export-btn" class="button-primary-action" style="width:100%; justify-content: center;"><i class="fas fa-video"></i> تصدير الفيديو</button>
               <p id="export-note" style="font-size: 0.8em; opacity: 0.7; margin-top: 10px; text-align: center;"></p>
               <div id="export-progress" style="display:none; margin-top:15px;">
@@ -237,9 +232,8 @@
               </div>
           </div>
         </div>
-      </div> <!-- نهاية active-control-panels-container -->
+      </div>
 
-      <!-- شريط التبويب السفلي الرئيسي -->
       <nav id="main-bottom-tab-bar">
         <button class="main-tab-button active" data-target-panel="quran-selection-panel" title="القرآن الكريم وإعدادات التلاوة">
           <i class="fas fa-book-quran"></i><span>القرآن</span>
@@ -257,19 +251,13 @@
             <i class="fas fa-share-square"></i><span>تصدير</span>
         </button>
       </nav>
-    </div> <!-- نهاية editor-screen -->
-  </div> <!-- نهاية app-container -->
+    </div>
+  </div>
 
-  <!-- مؤشر التحميل العام (Spinner) -->
   <div id="loading-spinner" class="spinner-overlay" style="display:none;"><div class="spinner"></div></div>
   
-  <!-- شريط الإشعارات (سيتم إنشاؤه بواسطة JS إذا لم يكن موجودًا) -->
-  <!-- <div id="app-notification-bar"></div> -->
-
-
   <script type="module" src="js/app.js"></script>
   <script>
-    // تسجيل Service Worker (لتطبيق الويب التقدمي PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then(registration => {
@@ -279,7 +267,6 @@
         });
       });
     }
-    // تحديث سنة حقوق النشر
     document.getElementById('current-year').textContent = new Date().getFullYear();
   </script>
 </body>
