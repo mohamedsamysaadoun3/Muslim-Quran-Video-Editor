@@ -1,168 +1,115 @@
 // js/services/quran-api-service.js
-import { ALQURAN_CLOUD_API_BASE, CURATED_RECITERS, CURATED_TRANSLATIONS } from '../config/constants.js';
-// import { handleError, withErrorHandlingAsync } from '../core/error-handler.js'; // Future integration
+import { QURAN_API_BASE_URL } from '../config/constants.js';
+import { handleError, withErrorHandling } from '../core/error-handler.js';
+
+const apiClient = axios.create({
+    baseURL: QURAN_API_BASE_URL,
+    timeout: 10000, // مهلة 10 ثواني
+});
 
 /**
- * Fetches the list of all Surahs.
- * @returns {Promise<Array>} A promise that resolves to an array of Surah objects.
- * @throws {Error} If the API request fails.
+ * يجلب قائمة بجميع السور.
+ * @returns {Promise<Array>} وعد يتم حله إلى مصفوفة من كائنات السور.
+ * API: http://api.alquran.cloud/v1/surah
  */
-export async function fetchAllSurahs() {
-    console.log("[Quran API] Fetching all Surahs...");
-    try {
-        const response = await axios.get(`${ALQURAN_CLOUD_API_BASE}/surah`);
-        if (response.data && response.data.data) {
-            console.log("[Quran API] Surahs fetched successfully:", response.data.data.length);
-            return response.data.data;
-        } else {
-            throw new Error("Invalid API response structure for Surahs.");
+export const fetchSurahs = withErrorHandling(async () => {
+    const response = await apiClient.get('/surah');
+    return response.data.data; // يحتوي على مصفوفة من السور
+}, 'جلب السور');
+
+/**
+ * يجلب تفاصيل سورة معينة، بما في ذلك آياتها.
+ * @param {number} surahNumber - رقم السورة (1-114).
+ * @param {string} [recitationIdentifier='ar.alafasy'] - معرّف لتلاوة الصوت.
+ * @returns {Promise<Object>} وعد يتم حله إلى كائن سورة مع الآيات.
+ * API: http://api.alquran.cloud/v1/surah/1/ar.alafasy
+ */
+export const fetchSurahWithAyahs = withErrorHandling(async (surahNumber, recitationIdentifier = 'ar.alafasy') => {
+    if (!surahNumber) throw new Error("رقم السورة مطلوب.");
+    const endpoint = recitationIdentifier ? `/surah/${surahNumber}/${recitationIdentifier}` : `/surah/${surahNumber}`;
+    const response = await apiClient.get(endpoint);
+    return response.data.data; // يحتوي على تفاصيل السورة والآيات مع الصوت
+}, 'جلب سورة مع الآيات');
+
+
+/**
+ * يجلب آية معينة.
+ * @param {number|string} ayahIdentifier - معرّف الآية (مثال: "2:255" أو رقم الآية العام).
+ * @param {string} [recitationIdentifier='ar.alafasy'] - معرّف التلاوة.
+ * @returns {Promise<Object>} وعد يتم حله إلى كائن آية.
+ * API: http://api.alquran.cloud/v1/ayah/2:255/ar.alafasy
+ */
+export const fetchAyah = withErrorHandling(async (ayahIdentifier, recitationIdentifier = 'ar.alafasy') => {
+    if (!ayahIdentifier) throw new Error("معرّف الآية مطلوب.");
+    const endpoint = recitationIdentifier ? `/ayah/${ayahIdentifier}/${recitationIdentifier}` : `/ayah/${ayahIdentifier}`;
+    const response = await apiClient.get(endpoint);
+    return response.data.data;
+}, 'جلب آية');
+
+/**
+ * يجلب قائمة بالقراء المتاحين (Editions من نوع 'audio').
+ * @returns {Promise<Array>} وعد يتم حله إلى مصفوفة من كائنات إصدارات القراء.
+ * API: http://api.alquran.cloud/v1/edition?format=audio&language=ar&type=versebyverse (مثال)
+ * سنسهل ونجلب جميع إصدارات الصوت.
+ */
+export const fetchReciters = withErrorHandling(async () => {
+    const response = await apiClient.get('/edition', {
+        params: {
+            format: 'audio',
+            type: 'versebyverse' // أو 'translation' لترجمات صوتية
+            // language: 'ar' // يمكن حذفه للحصول على جميع اللغات، أو تحديده
         }
-    } catch (error) {
-        console.error("[Quran API] Error fetching Surahs:", error);
-        // handleError(error, "Fetching Surahs", true); // Future
-        alert("فشل تحميل قائمة السور. يرجى التحقق من اتصالك بالإنترنت.");
-        throw error; // Re-throw for the caller to handle if needed
-    }
-}
+    });
+    // تصفية للتلاوات العربية، أو توفير خيارات للغات أخرى إذا لزم الأمر
+    return response.data.data.filter(edition => edition.language === 'ar' && edition.type === 'versebyverse');
+}, 'جلب القراء');
 
 /**
- * Fetches the list of available reciters.
- * For now, it returns a curated list. Can be changed to fetch from API if a suitable endpoint exists.
- * @returns {Promise<Array>} A promise that resolves to an array of Reciter objects.
+ * يجلب قائمة بالترجمات المتاحة (Editions من نوع 'translation').
+ * @returns {Promise<Array>} وعد يتم حله إلى مصفوفة من كائنات إصدارات الترجمة.
+ * API: http://api.alquran.cloud/v1/edition?format=text&type=translation
  */
-export async function fetchAvailableReciters() {
-    console.log("[Quran API] Providing curated reciters list...");
-    // Simulating an async operation, though it's sync for curated list
-    return Promise.resolve(CURATED_RECITERS);
-    // Example for API fetch if available:
-    /*
-    try {
-        const response = await axios.get(`${ALQURAN_CLOUD_API_BASE}/edition/type/audio`);
-        if (response.data && response.data.data) {
-            return response.data.data.map(r => ({ identifier: r.identifier, name: r.englishName })); // Adjust mapping
-        } else {
-            throw new Error("Invalid API response for reciters.");
+export const fetchTranslations = withErrorHandling(async () => {
+    const response = await apiClient.get('/edition', {
+        params: {
+            format: 'text',
+            type: 'translation'
         }
-    } catch (error) {
-        console.error("[Quran API] Error fetching reciters:", error);
-        alert("فشل تحميل قائمة القراء.");
-        throw error;
-    }
-    */
-}
+    });
+    return response.data.data;
+}, 'جلب الترجمات');
+
 
 /**
- * Fetches the list of available translations.
- * For now, it returns a curated list.
- * @returns {Promise<Array>} A promise that resolves to an array of Translation objects.
+ * يجلب آيات سورة معينة مع ترجمة محددة.
+ * @param {number} surahNumber - رقم السورة.
+ * @param {string} translationIdentifier - معرّف إصدار الترجمة.
+ * @returns {Promise<Object>} وعد يتم حله إلى كائن سورة مع آيات مترجمة.
+ * API: http://api.alquran.cloud/v1/surah/1/en.sahih
  */
-export async function fetchAvailableTranslations() {
-    console.log("[Quran API] Providing curated translations list...");
-    return Promise.resolve(CURATED_TRANSLATIONS);
-    // Example for API fetch if available:
-    /*
-    try {
-        const response = await axios.get(`${ALQURAN_CLOUD_API_BASE}/edition/type/translation`);
-         if (response.data && response.data.data) {
-            return response.data.data.map(t => ({ identifier: t.identifier, name: t.englishName })); // Adjust mapping
-        } else {
-            throw new Error("Invalid API response for translations.");
-        }
-    } catch (error) {
-        console.error("[Quran API] Error fetching translations:", error);
-        alert("فشل تحميل قائمة الترجمات.");
-        throw error;
-    }
-    */
-}
+export const fetchSurahWithTranslation = withErrorHandling(async (surahNumber, translationIdentifier) => {
+    if (!surahNumber || !translationIdentifier) throw new Error("رقم السورة ومعرّف الترجمة مطلوبان.");
+    const response = await apiClient.get(`/surah/${surahNumber}/${translationIdentifier}`);
+    return response.data.data; // يحتوي على تفاصيل السورة والآيات مع الترجمة
+}, 'جلب سورة مع الترجمة');
+
 
 /**
- * Fetches data for a specific Ayah, including text and audio URL for a given reciter.
- * @param {number} globalAyahNumber - The global number of the Ayah in the Quran.
- * @param {string} reciterIdentifier - The identifier of the reciter.
- * @returns {Promise<object>} A promise that resolves to Ayah data (text, audioSrc, duration estimate).
- * @throws {Error} If the API request fails.
+ * يبحث في القرآن.
+ * هذا API قوي ولكن قد يكون محدود الاستخدام أو يتطلب خططًا محددة للاستخدام الكثيف.
+ * @param {string} query - مصطلح البحث.
+ * @param {string} [scope='surah:1-114'] - نطاق البحث، مثال: 'surah:1' أو 'ayah:2:255'.
+ * @param {string} [translationIdentifier] - ترجمة اختيارية للبحث ضمنها.
+ * @returns {Promise<Object>} نتائج البحث.
+ * API: http://api.alquran.cloud/v1/search/muhammad/all/en.sahih
  */
-export async function fetchAyahDataWithAudio(globalAyahNumber, reciterIdentifier) {
-    // console.log(`[Quran API] Fetching Ayah ${globalAyahNumber} with audio by ${reciterIdentifier}`);
-    try {
-        // We need to fetch the specific edition for the reciter to get the audio
-        // And a text edition (e.g., simple Quran text) for the Ayah text itself.
-        // The /ayah/{ayah}/{edition} endpoint gives both text and audio if edition is audio.
-        const response = await axios.get(`${ALQURAN_CLOUD_API_BASE}/ayah/${globalAyahNumber}/${reciterIdentifier}`);
-        if (response.data && response.data.code === 200 && response.data.data) {
-            const ayahData = response.data.data;
-            return {
-                text: ayahData.text, // Text from the reciter's edition (usually just Quranic text)
-                audioSrc: ayahData.audio,
-                // Duration is not directly available in this specific endpoint usually.
-                // It might be in audioSecondary or require another call/estimation.
-                // For simplicity, duration estimation will be handled in audio-data-loader.js
-            };
-        } else {
-            throw new Error(`Invalid API response for Ayah ${globalAyahNumber} with audio.`);
-        }
-    } catch (error) {
-        console.error(`[Quran API] Error fetching Ayah ${globalAyahNumber} with audio for ${reciterIdentifier}:`, error);
-        // handleError(error, `Fetching Ayah ${globalAyahNumber} audio`, true); // Future
-        // Don't alert for every single ayah fetch failure, could be overwhelming.
-        // The calling function (audio-data-loader) should handle this more gracefully.
-        throw error;
-    }
-}
-
-/**
- * Fetches text for a specific Ayah, optionally with a translation.
- * @param {number} globalAyahNumber - The global number of the Ayah in the Quran.
- * @param {string|null} translationIdentifier - The identifier of the translation, or null/empty for no translation.
- * @returns {Promise<object>} A promise that resolves to Ayah text data {text, translationText}.
- * @throws {Error} If the API request fails.
- */
-export async function fetchAyahTextWithTranslation(globalAyahNumber, translationIdentifier) {
-    // console.log(`[Quran API] Fetching Ayah ${globalAyahNumber} text ${translationIdentifier ? 'with translation ' + translationIdentifier : ''}`);
+export const searchQuran = withErrorHandling(async (query, scope = 'all', translationIdentifier) => {
+    if (!query) throw new Error("مصطلح البحث مطلوب.");
     const endpoint = translationIdentifier
-        ? `${ALQURAN_CLOUD_API_BASE}/ayah/${globalAyahNumber}/editions/quran-simple-clean,${translationIdentifier}` // Fetch Quran text and translation
-        : `${ALQURAN_CLOUD_API_BASE}/ayah/${globalAyahNumber}/quran-simple-clean`; // Fetch only Quran text
+        ? `/search/${encodeURIComponent(query)}/${scope}/${translationIdentifier}`
+        : `/search/${encodeURIComponent(query)}/${scope}`;
+    const response = await apiClient.get(endpoint);
+    return response.data.data;
+}, 'البحث في القرآن');
 
-    try {
-        const response = await axios.get(endpoint);
-        if (response.data && response.data.code === 200 && response.data.data) {
-            let quranText = "";
-            let translationText = null;
-
-            if (Array.isArray(response.data.data)) { // Multiple editions returned
-                const quranEdition = response.data.data.find(ed => ed.edition.identifier === 'quran-simple-clean');
-                const translationEdition = translationIdentifier
-                    ? response.data.data.find(ed => ed.edition.identifier === translationIdentifier)
-                    : null;
-
-                if (quranEdition) quranText = quranEdition.text;
-                if (translationEdition) translationText = translationEdition.text;
-
-            } else { // Single edition returned (quran-simple-clean)
-                quranText = response.data.data.text;
-            }
-
-            if (!quranText) {
-                 // Fallback if quran-simple-clean is not found, try to get text from the first available edition
-                if (Array.isArray(response.data.data) && response.data.data.length > 0 && response.data.data[0].text) {
-                    quranText = response.data.data[0].text;
-                    console.warn(`[Quran API] Used text from edition ${response.data.data[0].edition.identifier} as quran-simple-clean was not primary.`);
-                } else {
-                    throw new Error(`Quran text not found for Ayah ${globalAyahNumber}.`);
-                }
-            }
-
-            return {
-                text: quranText,
-                translationText: translationText,
-            };
-        } else {
-            throw new Error(`Invalid API response for Ayah ${globalAyahNumber} text/translation.`);
-        }
-    } catch (error) {
-        console.error(`[Quran API] Error fetching Ayah ${globalAyahNumber} text/translation:`, error);
-        // handleError(error, `Fetching Ayah ${globalAyahNumber} text/translation`, true);
-        throw error;
-    }
-}
+// يمكنك إضافة المزيد من دوال API المحددة حسب الحاجة.
