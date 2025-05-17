@@ -5,7 +5,7 @@
   "start_url": "./index.html?launcher=true",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#004d40",
+  "background_color": "#0D0D0D",
   "theme_color": "#00796b",
   "lang": "ar",
   "icons": [
@@ -58,7 +58,7 @@
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "واجهة المحرر الرئيسية"
+      "label": "واجهة المحرر الرئيسية (التصميم الجديد)"
     },
     {
       "src": "screenshots/screenshot2.png",
