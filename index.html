@@ -17,7 +17,7 @@
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tinycolor/1.6.0/tinycolor.min.js" integrity="sha512-AvEgNHj5uTbsQINnrR0FzV0XgVfTAB3LhU9d7W3D6HFLgDkS888CEKVTb3gVlXnFhQ9mP8xHjR7fH6nPB4J+g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script> <!-- Added Axios -->
   <script src="https://cdn.jsdelivr.net/npm/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
 
 </head>
@@ -59,8 +59,8 @@
       <main id="editor-main-area-new">
         <div id="video-preview-container">
           <canvas id="video-preview-canvas"></canvas>
-          <!-- HTML Overlay for text (can be hidden if canvas drawing is preferred for preview) -->
-          <div id="preview-overlay-content" style="pointer-events: none;">
+          <!-- HTML Overlay for text -->
+          <div id="preview-overlay-content">
             <h2 id="preview-surah-title-overlay"></h2>
             <div id="preview-ayah-text-overlay" class="arabic-text"></div>
             <div id="preview-translation-text-overlay" class="translation-text-overlay"></div>
@@ -161,8 +161,8 @@
                 <option value="none">بدون فلتر</option>
                 <option value="grayscale(100%)">رمادي</option>
                 <option value="sepia(100%)">بني داكن</option>
-                <option value="brightness(1.5)">سطوع عالي</option> <!-- Corrected value -->
-                <option value="contrast(1.5)">تباين عالي</option> <!-- Corrected value -->
+                <option value="brightness(1.5)">سطوع عالي</option>
+                <option value="contrast(1.5)">تباين عالي</option>
                 <option value="blur(3px)">ضبابي</option>
                 <option value="invert(100%)">عكس الألوان</option>
                 <option value="hue-rotate(90deg)">تدوير الصبغة</option>
