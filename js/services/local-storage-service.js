@@ -1,118 +1,87 @@
 // js/services/local-storage-service.js
-import { LOCAL_STORAGE_PROJECTS_KEY, LOCAL_STORAGE_THEME_KEY, PEXELS_API_KEY_STORAGE_KEY, LOCAL_STORAGE_LAST_PEXELS_QUERY_KEY } from '../config/constants.js';
-// import { handleError } from '../core/error-handler.js'; // Future integration
+import { handleError } from '../core/error-handler.js';
 
 /**
- * Saves all projects to localStorage.
- * @param {Array<object>} projects - The array of project objects to save.
+ * غلاف لـ window.localStorage مع معالجة الأخطاء وتحليل/تسلسل JSON.
  */
-export function saveProjectsToStorage(projects) {
+
+/**
+ * يسترجع عنصرًا من localStorage ويحلله كـ JSON.
+ * @param {string} key - مفتاح العنصر المراد استرجاعه.
+ * @returns {any|null} العنصر المسترجع، أو null إذا لم يتم العثور عليه أو حدث خطأ.
+ */
+export function getItem(key) {
     try {
-        localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify(projects));
-        console.log("[Storage Service] Projects saved to localStorage:", projects.length);
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : null;
     } catch (error) {
-        console.error("[Storage Service] Error saving projects to localStorage:", error);
-        // handleError(error, "Saving Projects", true);
-        alert("حدث خطأ أثناء حفظ المشاريع. قد لا يتم حفظ التغييرات الأخيرة.");
+        handleError(error, `LocalStorage GetItem (${key})`, false); // false: لا تخطر المستخدم بهذا
+        return null;
     }
 }
 
 /**
- * Loads all projects from localStorage.
- * @returns {Array<object>} An array of project objects, or an empty array if none found or error.
+ * يخزن عنصرًا في localStorage بعد تحويله إلى سلسلة.
+ * @param {string} key - المفتاح الذي سيتم تخزين العنصر تحته.
+ * @param {any} value - القيمة المراد تخزينها.
+ * @returns {boolean} true إذا نجحت العملية، false خلاف ذلك.
  */
-export function loadProjectsFromStorage() {
+export function setItem(key, value) {
     try {
-        const projectsJson = localStorage.getItem(LOCAL_STORAGE_PROJECTS_KEY);
-        if (projectsJson) {
-            const projects = JSON.parse(projectsJson);
-            console.log("[Storage Service] Projects loaded from localStorage:", projects.length);
-            return projects;
+        localStorage.setItem(key, JSON.stringify(value));
+        return true;
+    } catch (error) {
+        // معالجة الأخطاء المحتملة مثل امتلاء مساحة التخزين (QuotaExceededError)
+        handleError(error, `LocalStorage SetItem (${key})`, true);
+        if (error.name === 'QuotaExceededError') {
+            alert('مساحة التخزين ممتلئة. قد تحتاج إلى حذف بعض المشاريع القديمة أو تفريغ مساحة.');
         }
-        return []; // No projects found
-    } catch (error) {
-        console.error("[Storage Service] Error loading projects from localStorage:", error);
-        // handleError(error, "Loading Projects", true);
-        alert("حدث خطأ أثناء تحميل المشاريع المحفوظة.");
-        return []; // Return empty array on error
+        return false;
     }
 }
 
 /**
- * Saves the current theme preference to localStorage.
- * @param {string} themeName - The name of the theme (e.g., 'light-theme', 'dark-theme').
+ * يزيل عنصرًا من localStorage.
+ * @param {string} key - مفتاح العنصر المراد إزالته.
  */
-export function saveThemePreference(themeName) {
+export function removeItem(key) {
     try {
-        localStorage.setItem(LOCAL_STORAGE_THEME_KEY, themeName);
-        console.log("[Storage Service] Theme preference saved:", themeName);
+        localStorage.removeItem(key);
     } catch (error) {
-        console.error("[Storage Service] Error saving theme preference:", error);
-        // handleError(error, "Saving Theme Preference", false); // Not critical to show user
+        handleError(error, `LocalStorage RemoveItem (${key})`, false);
     }
 }
 
 /**
- * Loads the theme preference from localStorage.
- * @returns {string|null} The theme name or null if not set.
+ * يمسح جميع العناصر من localStorage.
+ * تحذير: هذا سيمسح كل شيء تم تخزينه بواسطة التطبيق. استخدم بحذر.
  */
-export function loadThemePreference() {
+export function clearAll() {
     try {
-        return localStorage.getItem(LOCAL_STORAGE_THEME_KEY);
+        localStorage.clear();
+        // console.log('تم مسح LocalStorage.');
     } catch (error) {
-        console.error("[Storage Service] Error loading theme preference:", error);
-        // handleError(error, "Loading Theme Preference", false);
-        return null;
+        handleError(error, 'LocalStorage ClearAll', true);
     }
 }
 
 /**
- * Saves the Pexels API key to localStorage.
- * @param {string} apiKey - The Pexels API key.
+ * يتحقق مما إذا كان localStorage متاحًا وقابلاً للاستخدام.
+ * @returns {boolean} true إذا كان localStorage متاحًا، false خلاف ذلك.
  */
-export function savePexelsApiKey(apiKey) {
+export function isLocalStorageAvailable() {
     try {
-        localStorage.setItem(PEXELS_API_KEY_STORAGE_KEY, apiKey);
-        console.log("[Storage Service] Pexels API Key saved.");
-    } catch (error) {
-        console.error("[Storage Service] Error saving Pexels API Key:", error);
+        const testKey = '__localStorageTest__';
+        localStorage.setItem(testKey, testKey);
+        localStorage.removeItem(testKey);
+        return true;
+    } catch (e) {
+        return false;
     }
 }
 
-/**
- * Loads the Pexels API key from localStorage.
- * @returns {string|null} The Pexels API key or null.
- */
-export function loadPexelsApiKey() {
-     try {
-        return localStorage.getItem(PEXELS_API_KEY_STORAGE_KEY);
-    } catch (error) {
-        console.error("[Storage Service] Error loading Pexels API Key:", error);
-        return null;
-    }
-}
-
-/**
- * Saves the last used Pexels query.
- * @param {string} query - The Pexels query string.
- */
-export function saveLastPexelsQuery(query) {
-    try {
-        localStorage.setItem(LOCAL_STORAGE_LAST_PEXELS_QUERY_KEY, query);
-    } catch (error) {
-        console.warn("[Storage Service] Error saving last Pexels query:", error);
-    }
-}
-
-/**
- * Loads the last used Pexels query.
- * @returns {string|null} The last query or null.
- */
-export function loadLastPexelsQuery() {
-    try {
-        return localStorage.getItem(LOCAL_STORAGE_LAST_PEXELS_QUERY_KEY);
-    } catch (error) {
-        console.warn("[Storage Service] Error loading last Pexels query:", error);
-        return null;
-    }
+if (!isLocalStorageAvailable()) {
+    console.warn('LocalStorage غير متاح. لن يتم حفظ حالة التطبيق.');
+    // اختياريًا، قم بإخطار المستخدم أو توفير آلية احتياطية إذا كانت حرجة.
+    handleError('LocalStorage غير متاح أو معطل.', 'تهيئة LocalStorage', true);
 }
