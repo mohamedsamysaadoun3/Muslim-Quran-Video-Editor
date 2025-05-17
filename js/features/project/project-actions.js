@@ -1,118 +1,133 @@
 // js/features/project/project-actions.js
-import { createNewProject, touchProject, isValidProject, DEFAULT_PROJECT_NAME } from './project-model.js'; // استيراد DEFAULT_PROJECT_NAME
+import { createNewProject, touchProject, isValidProject, DEFAULT_PROJECT_NAME } from './project-model.js';
 import { saveProjectToStorage, loadAllProjects, deleteProjectFromStorage, getProjectById } from './project-save-load.js';
-import { setCurrentProject, getCurrentProject, resetHistory } from '../../core/state-manager.js';
+import { setCurrentProject, getCurrentProject, saveState } from '../../core/state-manager.js'; // تم إزالة resetHistory
 import { renderProjectsList } from './project-list-ui.js';
 import { getElement } from '../../core/dom-loader.js';
 import eventBus from '../../core/event-bus.js';
 import { withSpinner } from '../../ui/spinner-control.js';
-import { showConfirm, showPrompt, showModal } from '../../ui/modal-handler.js'; // استيراد showModal
-import { updateUIFromProject } from '../../app.js';
+import { showConfirm, showPrompt } from '../../ui/modal-handler.js';
+import { updateUIFromProject } from '../../app.js'; // استيراد الدالة المركزية
 import { openPanel, closeAllPanels } from '../../ui/panel-manager.js';
-import { DEFAULT_QURAN_PANEL } from '../../config/constants.js'; // افترض وجود ثابت للوحة الافتراضية
 
 const initialScreen = getElement('initial-screen');
 const editorScreen = getElement('editor-screen');
 const currentProjectTitleEditor = getElement('current-project-title-editor');
 
 
-/**
- * ينشئ مشروعًا جديدًا وينتقل إلى شاشة المحرر.
- */
 export async function createAndEditNewProject() {
-    console.log("createAndEditNewProject: بدء إنشاء مشروع جديد...");
-    let newProject = createNewProject(); // احصل على مشروع جديد بالإعدادات الافتراضية
+    console.log("createAndEditNewProject: بدء...");
+    let newProject = createNewProject();
 
     const projectName = await showPrompt(
         'اسم المشروع الجديد',
-        'الرجاء إدخال اسم لمشروعك الجديد:',
-        newProject.name, // الاسم الافتراضي
+        'الرجاء إدخال اسم لمشروعك:',
+        newProject.name,
         'text',
-        { placeholder: 'مثال: تلاوة سورة الفاتحة', required: true } // اجعله مطلوبًا
+        { placeholder: 'مثال: تلاوة سورة الفاتحة', required: true }
     );
 
-    if (projectName === null) { // ألغى المستخدم
-        console.log("createAndEditNewProject: ألغى المستخدم إنشاء المشروع.");
+    if (projectName === null) {
+        console.log("createAndEditNewProject: ألغى المستخدم.");
         return;
     }
     
-    // إذا لم يدخل المستخدم اسمًا ولكنه ضغط موافق، استخدم الاسم الافتراضي
     newProject.name = projectName.trim() || DEFAULT_PROJECT_NAME;
 
-    setCurrentProject(newProject); // هذا يضبط المشروع الحالي ويهيئ سجل التراجع
+    // setCurrentProject سيهيئ سجل التراجع/الإعادة مع هذا المشروع الجديد
+    setCurrentProject(newProject); 
 
     saveProjectToStorage(newProject);
-    refreshProjectsListView(); // تحديث القائمة في الشاشة الرئيسية
+    refreshProjectsListView();
 
-    switchToEditorScreen(newProject); // الانتقال إلى شاشة المحرر
-    // updateUIFromProject(newProject); // سيتم استدعاؤها ضمنيًا عند تغيير الشاشة أو من خلال أحداث أخرى
+    switchToEditorScreen(newProject); // هذا يجب أن يستدعي updateUIFromProject
+    // لا حاجة لاستدعاء updateUIFromProject(newProject) هنا مرة أخرى إذا كانت switchToEditorScreen تفعل ذلك
     
-    openPanel('quran-selection-panel'); // فتح لوحة القرآن كلوحة افتراضية
+    // eventBus.emit('newProjectCreated', newProject); // سيتم إطلاق panelOpened من openPanel
+    // فتح اللوحة الافتراضية بعد التأكد من أن الشاشة قد تغيرت وأن الواجهة محدثة
+    // يمكن تأخير هذا قليلاً أو الاعتماد على eventBus إذا كان هناك تسلسل دقيق مطلوب
+    setTimeout(() => openPanel('quran-selection-panel'), 0); 
     
-    eventBus.emit('newProjectCreated', newProject);
-    console.log("createAndEditNewProject: تم إنشاء مشروع جديد والانتقال للمحرر:", newProject);
+    console.log("createAndEditNewProject: اكتمل.", newProject);
 }
 
-// ... (باقي دوال loadProjectIntoEditor, saveCurrentProject, deleteProject, duplicateProject, refreshProjectsListView كما هي أو مع تعديلات طفيفة للتأكد من استدعاء updateUIFromProject عند الحاجة)
 export async function loadProjectIntoEditor(projectId) {
-    // ... (نفس الكود السابق مع التأكد من updateUIFromProject و openPanel)
     console.log(`loadProjectIntoEditor: تحميل مشروع ID: ${projectId}`);
     await withSpinner(async () => {
         const project = getProjectById(projectId);
         if (project && isValidProject(project)) {
-            setCurrentProject(project);
+            setCurrentProject(project); // يضبط المشروع ويهيئ السجل
             switchToEditorScreen(project);
-            // updateUIFromProject(project); // سيتم استدعاؤها عند تغيير الشاشة
-            openPanel('quran-selection-panel'); 
+            // updateUIFromProject(project); // يتم استدعاؤها بواسطة switchToEditorScreen
+            setTimeout(() => openPanel('quran-selection-panel'), 0);
             eventBus.emit('projectLoadedInEditor', project);
         } else {
-            handleError(`مشروع ID ${projectId} غير موجود أو غير صالح.`, "تحميل مشروع");
+            handleError(`مشروع ID ${projectId} غير موجود أو غير صالح.`, "تحميل مشروع", true);
         }
     });
 }
 
 export function saveCurrentProject() {
-    // ... (الكود السابق)
     const project = getCurrentProject();
-    if (!project) return;
-    touchProject(project);
-    if(saveProjectToStorage(project)){
-        eventBus.emit('showNotification', { type: 'success', message: 'تم حفظ المشروع بنجاح!' });
-        eventBus.emit('projectSaved', project);
+    if (!project) {
+        eventBus.emit('showNotification', {type: 'error', message: 'لا يوجد مشروع حالي للحفظ.'});
+        return;
     }
+    touchProject(project);
+    if (saveProjectToStorage(project)) {
+        eventBus.emit('showNotification', { type: 'success', message: 'تم حفظ المشروع بنجاح!' });
+        eventBus.emit('projectSaved', project); // لتحديث قائمة المشاريع إذا لزم الأمر
+    }
+    // لا حاجة لـ refreshProjectsListView هنا مباشرة
 }
 
 export async function deleteProject(projectInfo) {
-    // ... (الكود السابق مع التأكد من updateUIFromProject إذا تم حذف المشروع الحالي)
-    const confirmed = await showConfirm(/* ... */);
-    if(confirmed){
+    const confirmed = await showConfirm(
+        'تأكيد الحذف',
+        `هل أنت متأكد أنك تريد حذف المشروع "${projectInfo.projectName}"؟ لا يمكن التراجع عن هذا الإجراء.`
+    );
+
+    if (confirmed) {
         await withSpinner(async () => {
-            if(deleteProjectFromStorage(projectInfo.projectId)){
-                // ...
+            if (deleteProjectFromStorage(projectInfo.projectId)) {
+                eventBus.emit('showNotification', { type: 'info', message: `تم حذف المشروع "${projectInfo.projectName}".` });
+                
                 const current = getCurrentProject();
-                if(current && current.id === projectInfo.projectId){
-                    setCurrentProject(createNewProject());
-                    if(editorScreen.classList.contains('active-screen')){
-                        // updateUIFromProject(getCurrentProject()); // سيتم من خلال projectSet
+                if (current && current.id === projectInfo.projectId) {
+                    // إذا تم حذف المشروع الحالي، قم بالتبديل إلى مشروع جديد فارغ
+                    const newProj = createNewProject();
+                    setCurrentProject(newProj); // هذا سيطلق حدث 'projectSet' الذي بدوره يستدعي updateUIFromProject
+                    if (editorScreen.classList.contains('active-screen')) {
+                        // لا حاجة لـ updateUI هنا، سيتم من projectSet
                         openPanel('quran-selection-panel');
                     }
                 }
-                refreshProjectsListView();
+                refreshProjectsListView(); // تحديث القائمة بعد حذف المشروع
                 eventBus.emit('projectDeleted', projectInfo.projectId);
+            } else {
+                eventBus.emit('showNotification', { type: 'error', message: 'فشل حذف المشروع.' });
             }
         });
     }
 }
+
 export async function duplicateProject(projectId) {
-    // ... (الكود السابق)
     await withSpinner(async () => {
         const originalProject = getProjectById(projectId);
-        if(!originalProject) return;
+        if (!originalProject) {
+            eventBus.emit('showNotification', { type: 'error', message: 'المشروع الأصلي غير موجود.' });
+            return;
+        }
         const duplicatedProject = JSON.parse(JSON.stringify(originalProject));
-        // ... (تحديث id, name, timestamps)
+        duplicatedProject.id = `project_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        duplicatedProject.name = `${originalProject.name} (نسخة)`;
+        duplicatedProject.createdAt = new Date().toISOString();
+        touchProject(duplicatedProject);
+
         saveProjectToStorage(duplicatedProject);
         refreshProjectsListView();
         eventBus.emit('showNotification', { type: 'success', message: `تم نسخ المشروع "${originalProject.name}".` });
+        eventBus.emit('projectDuplicated', duplicatedProject);
     });
 }
 
@@ -121,21 +136,16 @@ export function refreshProjectsListView() {
     renderProjectsList(allProjects);
 }
 
-
-/**
- * يبدل العرض إلى شاشة المحرر.
- * @param {object} project - المشروع الذي يتم تحريره.
- */
 export function switchToEditorScreen(project) {
-    console.log("switchToEditorScreen: التبديل إلى شاشة المحرر للمشروع:", project?.name);
+    console.log("switchToEditorScreen - المشروع:", project?.name);
     if (!initialScreen || !editorScreen) {
-        console.error("خطأ فادح: الشاشة الأولية أو شاشة المحرر غير موجودة في DOM.");
+        console.error("switchToEditorScreen: الشاشات غير موجودة!");
         return;
     }
     if (!project) {
-        console.error("switchToEditorScreen: لا يوجد مشروع لتغيير الشاشة إليه.");
-        // قد ترغب في العودة للشاشة الرئيسية أو إنشاء مشروع جديد هنا
-        switchToInitialScreen();
+        console.error("switchToEditorScreen: لا يوجد مشروع للتبديل إليه!");
+        // كإجراء احتياطي، عد إلى الشاشة الرئيسية إذا لم يتم توفير مشروع
+        switchToInitialScreen(); 
         return;
     }
 
@@ -143,23 +153,17 @@ export function switchToEditorScreen(project) {
     initialScreen.style.display = 'none';
     
     editorScreen.classList.add('active-screen');
-    editorScreen.style.display = 'flex';
+    editorScreen.style.display = 'flex'; // تأكد من أن العرض صحيح
     
-    if (currentProjectTitleEditor) {
-        currentProjectTitleEditor.textContent = project.name || DEFAULT_PROJECT_NAME;
-    }
+    updateUIFromProject(project); // <<-- تحديث الواجهة بالكامل هنا
     
-    updateUIFromProject(project); // تحديث الواجهة بالكامل لتعكس هذا المشروع
     eventBus.emit('screenChanged', 'editor');
 }
 
-/**
- * يبدل العرض مرة أخرى إلى الشاشة الأولية (قائمة المشاريع).
- */
 export function switchToInitialScreen() {
-    console.log("switchToInitialScreen: التبديل إلى الشاشة الأولية");
+    console.log("switchToInitialScreen");
     if (!initialScreen || !editorScreen) {
-        console.error("خطأ فادح: الشاشة الأولية أو شاشة المحرر غير موجودة في DOM.");
+        console.error("switchToInitialScreen: الشاشات غير موجودة!");
         return;
     }
 
@@ -169,19 +173,15 @@ export function switchToInitialScreen() {
     initialScreen.classList.add('active-screen');
     initialScreen.style.display = 'flex';
     
-    refreshProjectsListView(); // تحديث قائمة المشاريع عند العودة
-    closeAllPanels(); // أغلق أي لوحات تحكم قد تكون مفتوحة
+    refreshProjectsListView();
+    closeAllPanels();
     eventBus.emit('screenChanged', 'initial');
 }
 
-
-/**
- * يهيئ الإجراءات المتعلقة بالمشروع ومستمعي الأحداث.
- * يتم استدعاؤه مرة واحدة عند بدء تشغيل التطبيق.
- */
 export function initializeProjectActions() {
-    console.log("initializeProjectActions: بدء تهيئة إجراءات المشروع...");
+    console.log("initializeProjectActions: بدء تهيئة...");
 
+    // ربط الأحداث العامة أولاً
     eventBus.on('loadProjectRequested', loadProjectIntoEditor);
     eventBus.on('deleteProjectRequested', deleteProject);
     eventBus.on('duplicateProjectRequested', duplicateProject);
@@ -189,29 +189,35 @@ export function initializeProjectActions() {
     const goToEditorBtn = getElement('go-to-editor-btn');
     if (goToEditorBtn) {
         goToEditorBtn.addEventListener('click', createAndEditNewProject);
-        console.log("initializeProjectActions: تم إرفاق مستمع لـ 'go-to-editor-btn'.");
     } else {
-        console.error("initializeProjectActions: خطأ فادح - لم يتم العثور على زر 'go-to-editor-btn'!");
+        console.error("initializeProjectActions: زر 'go-to-editor-btn' غير موجود!");
     }
 
     const backToInitialScreenBtn = getElement('back-to-initial-screen-btn');
     if (backToInitialScreenBtn) {
         backToInitialScreenBtn.addEventListener('click', async () => {
-            const confirmed = await showConfirm( /* ... */ );
-            if (confirmed === true) { saveCurrentProject(); switchToInitialScreen(); }
-            else if (confirmed === false) { switchToInitialScreen(); }
+            const confirmed = await showConfirm(
+                "العودة إلى القائمة الرئيسية",
+                "هل تريد حفظ التغييرات قبل العودة؟",
+                "حفظ والعودة",
+                "العودة بدون حفظ"
+            );
+            if (confirmed === true) { 
+                saveCurrentProject(); 
+                switchToInitialScreen(); 
+            } else if (confirmed === false) { 
+                switchToInitialScreen(); 
+            }
         });
-    } else {
-        console.warn("initializeProjectActions: لم يتم العثور على زر 'back-to-initial-screen-btn'.");
     }
 
     const saveProjectBtnEditor = getElement('save-project-btn-editor');
     if (saveProjectBtnEditor) {
         saveProjectBtnEditor.addEventListener('click', saveCurrentProject);
-    } else {
-        console.warn("initializeProjectActions: لم يتم العثور على زر 'save-project-btn-editor'.");
     }
+    
+    // عرض المشاريع الموجودة عند التحميل الأولي (إذا كانت الشاشة الأولية هي النشطة)
+    // refreshProjectsListView(); // يتم استدعاؤها الآن من main() بعد تهيئة كل شيء
 
-    refreshProjectsListView(); // عرض المشاريع الموجودة عند التحميل
-    console.log("initializeProjectActions: تم الانتهاء من تهيئة إجراءات المشروع.");
+    console.log("initializeProjectActions: اكتملت التهيئة.");
 }
