@@ -1,271 +1,36 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Muslim Quran Editor</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Noto+Naskh+Arabic:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Quran Editor">
-  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.png">
-  <meta name="theme-color" content="#0D0D0D"> <!-- Updated to dark theme base -->
-
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tinycolor/1.6.0/tinycolor.min.js" integrity="sha512-AvEgNHj5uTbsQINnrR0FzV0XgVfTAB3LhU9d7W3D6HFLgDkS888CEKVTb3gVlXnFhQ9mP8xHjR7fH6nPB4J+g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
-
-  <!-- Eruda for mobile debugging -->
-  <script src="//cdn.jsdelivr.net/npm/eruda"></script>
-  <script>eruda.init();</script>
-  <!-- End Eruda -->
-
+    <meta charset="UTF-8">
+    <title>Test Display</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { background-color: #111; color: white; font-size: 20px; padding: 20px; text-align: center; }
+        .test-initial-screen { border: 2px solid green; padding: 10px; }
+        .test-footer { border: 2px solid red; padding: 10px; margin-top: 20px; }
+        .test-button { background-color: lime; color: black; padding: 10px 20px; font-size: 18px; text-decoration: none; border-radius: 5px;}
+    </style>
+    <!-- Eruda (إذا كنت تريد اختباره مرة أخرى مع أبسط HTML) -->
+    <!-- <script src="//cdn.jsdelivr.net/npm/eruda"></script> -->
+    <!-- <script>if(window.eruda) eruda.init();</script> -->
 </head>
-<body class="dark-theme"> <!-- Default to dark theme -->
-
-  <div id="app-container">
-    <!-- Initial Screen -->
-    <div id="initial-screen" class="screen active-screen">
-      <header class="app-header">
-        <h1>Muslim Quran Editor</h1>
-        <button id="theme-toggle-initial" class="theme-button" title="تبديل الثيم">☀️</button>
-      </header>
-      <main>
-        <div class="projects-section">
-          <h2>مشاريعي المحفوظة</h2>
-          <div id="projects-list">
-            <p id="no-projects-message">لا توجد مشاريع محفوظة بعد.</p>
-            <!-- Project cards will be injected here -->
-          </div>
+<body>
+    <div id="app-container">
+        <div id="initial-screen" class="screen active-screen test-initial-screen">
+            <header class="app-header" style="background-color: teal; padding: 10px;">
+                <h1>Muslim Quran Editor (Test)</h1>
+            </header>
+            <main style="padding: 20px; min-height: 200px; border: 1px dashed yellow;">
+                <p>This is the main content area of the initial screen.</p>
+                <p id="no-projects-message">لا توجد مشاريع محفوظة بعد (Test).</p>
+            </main>
+            <footer class="initial-footer test-footer">
+                <a href="#" id="go-to-editor-btn" class="button-primary-action test-button">إنشاء فيديو جديد (Test)</a>
+                <p class="copyright" style="margin-top: 10px;">© Test</p>
+            </footer>
         </div>
-      </main>
-      <footer class="initial-footer">
-        <button id="go-to-editor-btn" class="button-primary-action"><i class="fas fa-plus"></i> إنشاء فيديو جديد</button>
-        <p class="copyright">© <span id="current-year"></span> Muslim Quran Editor</p>
-      </footer>
     </div>
-
-    <!-- Editor Screen - Major Redesign -->
-    <div id="editor-screen" class="screen" style="display:none;">
-      <header class="editor-header editor-top-bar">
-        <button id="back-to-initial-screen-btn" class="icon-button" title="العودة"><i class="fas fa-arrow-left"></i></button>
-        <h2 id="current-project-title-editor" class="project-title-editable" contenteditable="false" spellcheck="false" title="اضغط للتعديل">مشروع جديد</h2>
-        <div class="editor-top-actions">
-          <button id="theme-toggle-editor" class="theme-button" title="تبديل الثيم">☀️</button>
-          <button id="save-project-btn-editor" class="action-button editor-save-btn" title="حفظ المشروع"><i class="fas fa-check"></i> حفظ</button>
-        </div>
-      </header>
-
-      <main id="editor-main-area-new">
-        <div id="video-preview-background-blur"></div>
-        <div id="video-preview-card-container">
-            <div id="video-preview-container">
-                <canvas id="video-preview-canvas"></canvas>
-                <div id="preview-overlay-content">
-                    <h2 id="preview-surah-title-overlay"></h2>
-                    <div id="preview-ayah-text-overlay" class="arabic-text"></div>
-                    <div id="preview-translation-text-overlay" class="translation-text-overlay"></div>
-                </div>
-            </div>
-        </div>
-      </main>
-
-      <div id="editor-controls-area">
-        <div id="playback-timeline-section">
-          <div id="timeline-container">
-            <span id="current-time-display">0:00</span>
-            <input type="range" id="timeline-slider" value="0" min="0" max="100" step="0.1" />
-            <span id="total-time-display">0:00</span>
-          </div>
-        </div>
-
-        <div id="main-playback-controls">
-          <button id="undo-btn" class="playback-icon-button" title="تراجع" disabled><i class="fas fa-undo"></i></button>
-          <button id="rewind-btn" class="playback-icon-button large" title="السابق"><i class="fas fa-backward"></i></button>
-          <button id="play-pause-main-btn" class="playback-icon-button extra-large" title="تشغيل"><i class="fas fa-play"></i></button>
-          <button id="fast-forward-btn" class="playback-icon-button large" title="التالي"><i class="fas fa-forward"></i></button>
-          <button id="redo-btn" class="playback-icon-button" title="إعادة" disabled><i class="fas fa-redo"></i></button>
-        </div>
-
-        <nav id="main-bottom-tab-bar">
-            <button class="main-tab-button active" data-target-panel="quran-selection-panel" title="القرآن الكريم">
-              <i class="fas fa-book-quran"></i><span>القرآن</span>
-            </button>
-            <button class="main-tab-button" data-target-panel="background-settings-panel" title="إعدادات الخلفية">
-              <i class="fas fa-image"></i><span>الخلفية</span>
-            </button>
-            <button class="main-tab-button" data-target-panel="effects-text-settings-panel" title="الأبعاد والنص">
-              <i class="fas fa-ruler-combined"></i><span>الأبعاد</span>
-            </button>
-            <button class="main-tab-button" data-target-panel="audio-settings-panel" title="إعدادات الصوت">
-                <i class="fas fa-sliders-h"></i><span>الصوت</span>
-            </button>
-            <button class="main-tab-button" data-target-panel="export-settings-panel" title="تصدير الفيديو">
-                <i class="fas fa-share-square"></i><span>تصدير</span>
-            </button>
-        </nav>
-      </div>
-
-      <div id="active-control-panels-container">
-        <!-- Quran Selection Panel -->
-        <div id="quran-selection-panel" class="control-panel">
-          <div class="panel-header">
-            <h3>القرآن</h3>
-            <button class="panel-action-button confirm-panel-btn" data-panelid="quran-selection-panel" title="تأكيد وإغلاق"><i class="fas fa-check"></i></button>
-          </div>
-          <div class="panel-content">
-            <div><label for="surah-select">السورة:</label><select id="surah-select"></select></div>
-            <div><label for="ayah-start-select">من آية:</label><select id="ayah-start-select"></select></div>
-            <div><label for="ayah-end-select">إلى آية:</label><select id="ayah-end-select"></select></div>
-            <div><label for="reciter-select">القارئ:</label><select id="reciter-select"></select></div>
-            <div class="voice-input-quran">
-              <button id="voice-search-quran-btn" class="control-button small-mic" disabled><i class="fas fa-microphone"></i> <span id="voice-search-status">البحث الصوتي</span></button>
-            </div>
-            <div><label for="translation-select">الترجمة:</label><select id="translation-select"><option value="">بدون ترجمة</option></select></div>
-          </div>
-        </div>
-
-        <!-- Background Panel -->
-        <div id="background-settings-panel" class="control-panel">
-          <div class="panel-header">
-            <h3>الخلفية</h3>
-            <button class="panel-action-button close-panel-btn" data-panelid="background-settings-panel" title="إغلاق"><i class="fas fa-times"></i></button>
-          </div>
-          <div class="panel-content">
-            <div><label for="import-background">استيراد خلفية (صورة/فيديو):</label><input type="file" id="import-background" accept="image/*,video/*"></div>
-            <button id="apply-ai-bg" class="control-button" disabled>اقتراح خلفية (AI)</button>
-            <div id="ai-bg-suggestions-loader" style="display:none;">جاري تحميل الاقتراحات...</div>
-            <div id="ai-bg-suggestions"></div>
-             <hr class="panel-divider">
-             <div><label for="background-color-picker">أو اختر لون خلفية:</label><input type="color" id="background-color-picker" value="#000000"></div>
-          </div>
-        </div>
-
-        <!-- Audio/Sound Panel -->
-        <div id="audio-settings-panel" class="control-panel">
-          <div class="panel-header">
-            <h3>الصوت والمؤثرات</h3>
-            <button class="panel-action-button close-panel-btn" data-panelid="audio-settings-panel" title="إغلاق"><i class="fas fa-times"></i></button>
-          </div>
-          <div class="panel-content">
-            <h4>إعدادات التلاوة</h4>
-            <div id="audio-preview-status-text" style="text-align:center; margin: 5px 0; min-height: 1.2em;"></div>
-            <div><label for="delay-between-ayahs">تأخير بين الآيات (ثواني):</label><input type="number" id="delay-between-ayahs" value="1" min="0" max="10" step="0.1"></div>
-            <hr class="panel-divider">
-            <h4>موسيقى خلفية</h4>
-            <div class="audio-panel-buttons">
-              <button id="extract-audio-btn" class="control-button" title="استخراج الصوت من فيديو الخلفية (قيد الإنشاء)" disabled><i class="fas fa-file-audio"></i> استخراج الصوت</button>
-              <button id="add-sound-btn" class="control-button" title="إضافة ملف صوتي أو موسيقى خلفية (قيد الإنشاء)" disabled><i class="fas fa-music"></i> إضافة صوت/موسيقى</button>
-            </div>
-            <div class="audio-panel-preview-placeholder">
-              <i class="fas fa-headphones-alt fa-2x" style="opacity:0.5; margin-bottom:10px;"></i>
-              <p style="text-align:center; font-size:0.9em;">(مستويات الصوت والتحكم في المزج قيد الإنشاء)</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Effects & Text Panel (Renamed to Dimensions & Text) -->
-        <div id="effects-text-settings-panel" class="control-panel">
-          <div class="panel-header">
-            <h3>الأبعاد والنص</h3>
-            <button class="panel-action-button close-panel-btn" data-panelid="effects-text-settings-panel" title="إغلاق"><i class="fas fa-times"></i></button>
-          </div>
-          <div class="panel-content">
-            <h4>أبعاد وفلاتر الفيديو</h4>
-            <div><label for="aspect-ratio-select">أبعاد الفيديو:</label><select id="aspect-ratio-select">
-                <option value="16:9">16:9 (Landscape)</option>
-                <option value="9:16" selected>9:16 (Portrait)</option>
-                <option value="1:1">1:1 (Square)</option>
-                <option value="4:3">4:3 (Classic)</option>
-                <option value="4:5">4:5 (Instagram Post)</option>
-            </select></div>
-            <div><label for="video-filter-select">فلاتر الفيديو:</label><select id="video-filter-select">
-                <option value="none">بدون فلتر</option>
-                <option value="grayscale(100%)">رمادي</option>
-                <option value="sepia(100%)">بني داكن</option>
-                <option value="brightness(1.5)">سطوع عالي</option>
-                <option value="contrast(1.5)">تباين عالي</option>
-                <option value="blur(3px)">ضبابي</option>
-                <option value="invert(100%)">عكس الألوان</option>
-                <option value="hue-rotate(90deg)">تدوير الصبغة</option>
-                <option value="saturate(2)">تشبع عالي</option>
-            </select></div>
-            <hr class="panel-divider">
-            <h4>إعدادات النص</h4>
-            <div><label for="font-select">خط القرآن:</label><select id="font-select">
-              <option value="'Amiri Quran', serif">Amiri Quran</option>
-              <option value="'Noto Naskh Arabic', serif">Noto Naskh Arabic</option>
-              <option value="'Tajawal', sans-serif">Tajawal</option>
-            </select></div>
-            <div><label for="font-size-slider">حجم الخط:</label><input type="range" id="font-size-slider" min="10" max="100" value="36"> <span id="font-size-value">36px</span></div>
-            <div><label for="font-color-picker">لون الخط:</label><input type="color" id="font-color-picker" value="#FFFFFF"></div>
-            <div><label for="ayah-bg-color-picker">خلفية الآية (لون):</label><input type="color" id="ayah-bg-color-picker" value="rgba(0,0,0,0.2)"></div>
-            <div><label for="text-effect-select">تأثير النص:</label><select id="text-effect-select" disabled>
-                <option value="none">بدون</option>
-                <option value="fade">تلاشي</option>
-                <option value="typewriter">كتابة</option>
-            </select></div>
-          </div>
-        </div>
-
-        <!-- Export Panel -->
-        <div id="export-settings-panel" class="control-panel">
-          <div class="panel-header">
-            <h3>تصدير</h3>
-            <button class="panel-action-button close-panel-btn" data-panelid="export-settings-panel" title="إغلاق"><i class="fas fa-times"></i></button>
-          </div>
-          <div class="panel-content">
-              <div><label for="resolution-select">دقة التصدير:</label><select id="resolution-select">
-                <option value="720x1280">720p (Portrait)</option> <!-- For 9:16 default -->
-                <option value="1080x1920" selected>1080p (Portrait)</option>
-                <option value="1280x720">720p (Landscape)</option>
-                <option value="1920x1080">1080p (Landscape)</option>
-              </select></div>
-              <div><label for="video-format-select">صيغة الفيديو:</label><select id="video-format-select">
-                <option value="webm" selected>WebM (جودة عالية، حجم أصغر)</option>
-                <option value="mp4" disabled>MP4 (يتطلب FFmpeg.wasm)</option>
-                <option value="gif">GIF (متحرك، بدون صوت)</option>
-              </select></div>
-              <div><label for="framerate-select">معدل الإطارات:</label><select id="framerate-select">
-                <option value="24">24 fps</option>
-                <option value="25" selected>25 fps (PAL)</option>
-                <option value="30">30 fps (NTSC)</option>
-                <option value="60">60 fps (سلس جداً)</option>
-              </select></div>
-              <button id="export-btn" class="button-primary-action" style="width:100%; margin-top:10px;"><i class="fas fa-video"></i> تصدير الفيديو</button>
-              <p id="export-note" style="font-size: 0.8em; opacity: 0.7;">ملاحظة: تصدير MP4 مع صوت يتطلب FFmpeg.wasm (قيد التطوير). WebM و GIF بدون صوت حاليًا عبر CCapture.js.</p>
-              <div id="export-progress" style="display:none;">
-                  <progress id="export-progress-bar" value="0" max="100"></progress>
-                  <span id="export-progress-text">0%</span>
-              </div>
-          </div>
-        </div>
-      </div>
-
-      <audio id="main-audio-player" style="display:none;"></audio>
-    </div>
-
-  </div>
-
-  <div id="loading-spinner" class="spinner-overlay" style="display:none;"><div class="spinner"></div></div>
-
-  <script type="module" src="js/app.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then(registration => {
-          console.log('Muslim Quran Editor: ServiceWorker registered: ', registration);
-        }).catch(registrationError => {
-          console.error('Muslim Quran Editor: ServiceWorker registration failed: ', registrationError);
-        });
-      });
-    }
-    document.getElementById('current-year').textContent = new Date().getFullYear();
-  </script>
+    <!-- لا تقم بتضمين app.js مبدئيًا في هذا الاختبار -->
+    <!-- <script type="module" src="js/app.js"></script> -->
 </body>
 </html>
