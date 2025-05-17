@@ -1,55 +1,77 @@
-```javascript
 // js/ui/spinner-control.js
-import { DOMElements } from '../core/dom-loader.js';
+import { getElement } from '../core/dom-loader.js';
 
-let spinnerTimeout = null;
+const spinnerOverlay = getElement('loading-spinner');
+let activeSpinners = 0; // عداد لعمليات غير متزامنة متعددة
 
 /**
- * Initializes the spinner. Ensures it's hidden by default.
+ * يعرض مؤشر التحميل العام.
+ * إذا أدت عمليات متعددة إلى استدعاء showSpinner، فلن يتم إخفاؤه إلا عند انتهاء جميع العمليات.
  */
-export function initSpinner() {
-    if (DOMElements.loadingSpinner) {
-        DOMElements.loadingSpinner.style.display = 'none';
-        console.log("[Spinner Control] Initialized.");
-    } else {
-        console.warn("[Spinner Control] Loading spinner element not found.");
+export function showSpinner() {
+    activeSpinners++;
+    if (spinnerOverlay && spinnerOverlay.style.display !== 'flex') {
+        spinnerOverlay.style.opacity = '0'; // للتحريك
+        spinnerOverlay.style.display = 'flex';
+        setTimeout(() => spinnerOverlay.style.opacity = '1', 10); // تأخير بسيط لبدء التحريك
+        // console.log('تم عرض مؤشر التحميل.');
     }
 }
 
 /**
- * Shows the loading spinner.
- * @param {number|null} [autoHideDelay=null] - Optional delay in ms to auto-hide the spinner.
- *                                            If null, spinner stays until hideSpinner() is called.
- */
-export function showSpinner(autoHideDelay = null) {
-    if (DOMElements.loadingSpinner) {
-        DOMElements.loadingSpinner.style.display = 'flex';
-        // console.log("[Spinner Control] Spinner shown.");
-
-        if (spinnerTimeout) {
-            clearTimeout(spinnerTimeout); // Clear any existing auto-hide timeout
-        }
-
-        if (typeof autoHideDelay === 'number' && autoHideDelay > 0) {
-            spinnerTimeout = setTimeout(() => {
-                hideSpinner();
-                spinnerTimeout = null;
-            }, autoHideDelay);
-        }
-    }
-}
-
-/**
- * Hides the loading spinner.
+ * يخفي مؤشر التحميل العام.
+ * يتم إخفاؤه فقط إذا وصل عداد مؤشرات التحميل النشطة إلى الصفر.
  */
 export function hideSpinner() {
-    if (DOMElements.loadingSpinner) {
-        DOMElements.loadingSpinner.style.display = 'none';
-        // console.log("[Spinner Control] Spinner hidden.");
-        if (spinnerTimeout) {
-            clearTimeout(spinnerTimeout);
-            spinnerTimeout = null;
-        }
+    activeSpinners--;
+    if (activeSpinners < 0) {
+        activeSpinners = 0; // لا ينبغي أن يحدث، ولكن كإجراء وقائي
+    }
+
+    if (activeSpinners === 0 && spinnerOverlay && spinnerOverlay.style.display === 'flex') {
+        spinnerOverlay.style.opacity = '0';
+        setTimeout(() => {
+            // تأكد مرة أخرى من أن activeSpinners لا يزال صفرًا قبل الإخفاء
+            if (activeSpinners === 0) {
+                spinnerOverlay.style.display = 'none';
+            }
+        }, 300); // تطابق مدة التحريك (إذا كان هناك تحريك للشفافية)
+        // console.log('تم إخفاء مؤشر التحميل.');
     }
 }
-```
+
+/**
+ * يخفي مؤشر التحميل بالقوة، مع إعادة تعيين العداد.
+ * مفيد في سيناريوهات الخطأ أو التجاوزات الصريحة.
+ */
+export function forceHideSpinner() {
+    activeSpinners = 0;
+    if (spinnerOverlay) {
+        spinnerOverlay.style.opacity = '0';
+        setTimeout(() => spinnerOverlay.style.display = 'none', 300);
+        // console.log('تم إخفاء مؤشر التحميل بالقوة.');
+    }
+}
+
+/**
+ * يغلف وعدًا أو دالة غير متزامنة بإدارة مؤشر التحميل تلقائيًا.
+ * @param {Promise|Function} promiseOrAsyncFn - الوعد أو الدالة غير المتزامنة للتغليف.
+ * @returns {Promise<any>} نتيجة الوعد/الدالة.
+ * @example
+ * await withSpinner(fetchSomeData());
+ * await withSpinner(async () => { await anotherAsyncOp(); });
+ */
+export async function withSpinner(promiseOrAsyncFn) {
+    showSpinner();
+    try {
+        if (typeof promiseOrAsyncFn === 'function') {
+            return await promiseOrAsyncFn();
+        }
+        return await promiseOrAsyncFn;
+    } finally {
+        // تأخير بسيط قبل الإخفاء لإعطاء انطباع بأن شيئًا ما قد اكتمل بالفعل
+        // خاصة للعمليات السريعة جدًا.
+        // await new Promise(resolve => setTimeout(resolve, 100)); // اختياري
+        hideSpinner();
+    }
+}
