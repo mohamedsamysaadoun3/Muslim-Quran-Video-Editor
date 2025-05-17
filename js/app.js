@@ -1,276 +1,202 @@
-// js/app.js - نقطة الدخول الرئيسية للتطبيق
+// js/app.js - نقطة الانطلاق الرئيسية (نسخة معدلة للتشخيص والحل الجذري)
 
-// --- الاستيرادات (تبقى كما هي) ---
-import { getElement, $, $$ } from './core/dom-loader.js';
-import { initializeTheme } from './ui/theme-handler.js';
-import { initializePanelManager, openPanel, closeAllPanels, getCurrentOpenPanelId } from './ui/panel-manager.js';
-import { initializeNotifications, showNotification } from './ui/notifications.js';
-import { initializeModals } from './ui/modal-handler.js';
-import { withSpinner } from './ui/spinner-control.js';
-import { getCurrentProject, setCurrentProject, saveState } from './core/state-manager.js'; // إزالة resetHistory إذا لم تستخدم مباشرة هنا
-import eventBus from './core/event-bus.js';
-import { handleError } from './core/error-handler.js';
-import { createNewProject, DEFAULT_PROJECT_NAME } from './features/project/project-model.js';
-import { initializeProjectActions, refreshProjectsListView, switchToEditorScreen, switchToInitialScreen } from './features/project/project-actions.js';
-import { getLastOpenedProjectId, getProjectById, isValidProject } from './features/project/project-save-load.js';
-import { loadQuranStaticData, calculateAyahStartTimesAndTotalDuration } from './features/quran/quran-data-loader.js';
-import { populateSurahSelect, populateReciterSelect, populateTranslationSelect, updateQuranSelectUIFromProject, initializeQuranSelectUI } from './features/quran/quran-select-ui.js';
-import { initializeQuranSpeechInput } from './features/quran/quran-speech-input.js';
-import { initializeBackgroundImport, updateBackgroundUIFromProject } from './features/background/background-import.js';
-import { initializeAIBackgroundSuggest, updateAIBackgroundSelectionUI } from './features/background/background-ai-suggest.js';
-import { clearBackgroundElementsCache } from './features/background/background-state.js';
-import { initializeTextStyleControls, updateTextStyleControlsUI } from './features/text/text-style-controls.js';
-import { initializeVideoDimensionsControls, updateVideoDimensionsUI } from './features/video/video-dimensions.js';
-import { initializeVideoFiltersControls, updateVideoFiltersUI, applyVideoFilterToCanvasEl } from './features/video/video-filters.js';
-import { initializeMainAudioPlayback, updateTimelineUI as updateAudioPlayerTimelineUI, refreshAudioPlayerForProject, getIsPlaying as getIsAudioPlaying } from './features/audio/main-audio-playback.js';
-import { initializeTimelineControls, updateTotalDurationDisplay, updateCurrentTimeDisplay } from './features/audio/timeline-control.js';
-import { initializeAudioDataLoader } from './features/audio/audio-data-loader.js';
-import { initializeBackgroundMusic, updateBackgroundMusicUI, syncBackgroundMusicToMainPlayback } from './features/audio/background-music.js';
-import { initializeAudioExtraction } from './features/audio/audio-extraction.js';
-import { initializeUndoRedo } from './features/editor-controls/undo-redo-handler.js';
-import { initializeExportOptionsUI, updateExportOptionsUIFromProject } from './features/general-settings/export-options-ui.js';
-import { initializeAppSettings } from './features/general-settings/app-settings.js';
-import { initializeCanvasPreview, updatePreview, updateCanvasDimensions, startPreviewRenderLoop, stopPreviewRenderLoop } from './features/video/canvas-preview.js';
-import { initializeVideoExport } from './features/video/video-export-ccapture.js';
-// --- نهاية الاستيرادات ---
+// --- الاستيرادات الأساسية جدًا للبدء ---
+import { getElement } from './core/dom-loader.js';
+import { initializeTheme, toggleTheme } from './ui/theme-handler.js';
+// سنقوم باستيراد الوحدات الأخرى تدريجيًا عندما نتأكد أن الأساس يعمل
+
+// --- تعريف العناصر الأساسية للواجهة ---
+let initialScreen = null;
+let editorScreen = null;
+let goToEditorBtn = null;
+let backToInitialScreenBtn = null;
+let themeToggleInitialBtn = null;
+let themeToggleEditorBtn = null;
+// المزيد من العناصر سيتم تعريفها عند الحاجة
 
 /**
- * تحديث جميع أجزاء واجهة المستخدم لتعكس حالة المشروع الحالية.
- * هذه هي الدالة المركزية لتحديث الواجهة.
- * @param {object} project - كائن المشروع الحالي.
+ * دالة لتهيئة عناصر DOM الرئيسية.
+ * يتم استدعاؤها بعد تحميل DOM.
  */
-export function updateUIFromProject(project) {
-    if (!project) {
-        console.error("updateUIFromProject: تم الاستدعاء بمشروع فارغ!");
-        // يمكنك هنا عرض رسالة خطأ للمستخدم أو إعادة توجيهه
-        return;
-    }
-    // console.log("updateUIFromProject: تحديث الواجهة للمشروع:", project.name, project);
+function cacheDOMElements() {
+    console.log("APP: cacheDOMElements - بدء جلب عناصر DOM...");
+    initialScreen = getElement('initial-screen');
+    editorScreen = getElement('editor-screen');
+    goToEditorBtn = getElement('go-to-editor-btn');
+    backToInitialScreenBtn = getElement('back-to-initial-screen-btn');
+    themeToggleInitialBtn = getElement('theme-toggle-initial');
+    themeToggleEditorBtn = getElement('theme-toggle-editor');
 
-    // تحديث عنوان المشروع
-    const projectTitleEditor = getElement('current-project-title-editor');
-    if (projectTitleEditor) projectTitleEditor.textContent = project.name || DEFAULT_PROJECT_NAME;
+    // التحقق من وجود العناصر الأساسية
+    if (!initialScreen) console.error("APP: cacheDOMElements - خطأ فادح: initialScreen غير موجود!");
+    if (!editorScreen) console.error("APP: cacheDOMElements - خطأ فادح: editorScreen غير موجود!");
+    if (!goToEditorBtn) console.error("APP: cacheDOMElements - خطأ فادح: goToEditorBtn غير موجود!");
+    // backToInitialScreenBtn و themeToggleEditorBtn قد لا يكونا بنفس الأهمية في البداية
+    if (!backToInitialScreenBtn) console.warn("APP: cacheDOMElements - تنبيه: backToInitialScreenBtn غير موجود.");
+    if (!themeToggleInitialBtn) console.error("APP: cacheDOMElements - خطأ: themeToggleInitialBtn غير موجود!");
 
-    // تحديث وحدات الواجهة المختلفة
-    updateQuranSelectUIFromProject(project);
-    updateBackgroundUIFromProject(project);
-    updateAIBackgroundSelectionUI(project); // لتحديد خلفية AI المختارة
-    updateTextStyleControlsUI(project);
-    updateVideoDimensionsUI(project);
-    updateVideoFiltersUI(project);
-    applyVideoFilterToCanvasEl(project.videoFilter); // تطبيق الفلتر على عنصر الكانفاس
-
-    // تحديثات الصوت
-    refreshAudioPlayerForProject(project); // لإعادة تهيئة مشغل الصوت بالآيات الحالية
-    updateBackgroundMusicUI(project);
-    syncBackgroundMusicToMainPlayback(getIsAudioPlaying()); // مزامنة موسيقى الخلفية
-
-    updateExportOptionsUIFromProject(project); // إذا كانت خيارات التصدير تعتمد على المشروع
-
-    // إعادة حساب المدد وتحديث شريط الزمن
-    if (project.selectedAyahs && project.selectedAyahs.length > 0) {
-        calculateAyahStartTimesAndTotalDuration(project);
-    } else {
-        project.totalDuration = 0; // إذا لا توجد آيات، المدة صفر
-    }
-    updateTotalDurationDisplay(project.totalDuration); // من timeline-control.js
-    updateCurrentTimeDisplay(project.timelinePosition || 0); // من timeline-control.js
-
-    // تحديث معاينة الكانفاس (يجب أن يكون هذا في النهاية بعد تحديث كل شيء آخر)
-    updateCanvasDimensions(project.aspectRatio); // هذا يستدعي updatePreview ضمنيًا
-
-    eventBus.emit('uiUpdatedForProject', project);
-    // console.log("updateUIFromProject: اكتمل تحديث الواجهة.");
+    console.log("APP: cacheDOMElements - اكتمل جلب عناصر DOM.");
 }
 
 
-function setupGlobalEventListeners() {
-    const projectTitleEditor = getElement('current-project-title-editor');
-    if (projectTitleEditor) {
-        projectTitleEditor.addEventListener('click', () => {
-            if (projectTitleEditor.contentEditable !== "true") {
-                projectTitleEditor.contentEditable = "true";
-                const range = document.createRange();
-                range.selectNodeContents(projectTitleEditor);
-                const selection = window.getSelection();
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
-        });
-        projectTitleEditor.addEventListener('blur', () => {
-            projectTitleEditor.contentEditable = "false";
-            const newName = projectTitleEditor.textContent.trim();
-            const project = getCurrentProject();
-            if (newName && project && project.name !== newName) {
-                project.name = newName;
-                // touchProject(project); // لا حاجة إذا كان saveCurrentProject سيفعل ذلك
-                setCurrentProject(project, false);
-                saveState(`اسم المشروع تغير إلى: ${newName}`);
-                // حفظ التغيير مباشرة (اختياري، أو عند الحفظ العام)
-                // saveCurrentProject(); 
-                showNotification({type: 'success', message: `تم تغيير اسم المشروع إلى "${newName}"`, duration: 2000});
-                 refreshProjectsListView();
-            } else if (project && (!newName || newName === "")) {
-                projectTitleEditor.textContent = project.name || DEFAULT_PROJECT_NAME;
-                showNotification({type: 'warning', message: `اسم المشروع لا يمكن أن يكون فارغًا.`, duration: 2500});
-            } else if (project) {
-                projectTitleEditor.textContent = project.name || DEFAULT_PROJECT_NAME;
-            }
-        });
-        projectTitleEditor.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                projectTitleEditor.blur();
-            }
-        });
+/**
+ * دالة للانتقال إلى شاشة المحرر
+ */
+function switchToEditorScreen() {
+    if (initialScreen && editorScreen) {
+        initialScreen.classList.remove('active-screen');
+        initialScreen.style.display = 'none';
+
+        editorScreen.classList.add('active-screen');
+        editorScreen.style.display = 'flex'; // أو 'block' حسب CSS
+        console.log("APP: تم التبديل إلى شاشة المحرر.");
+        // هنا لاحقًا سنضيف: updateUIFromProject(getCurrentProject());
+        // وهنا لاحقًا سنضيف: openPanel('quran-selection-panel');
     } else {
-        console.warn("setupGlobalEventListeners: لم يتم العثور على عنصر عنوان المشروع القابل للتعديل.");
+        console.error("APP: switchToEditorScreen - خطأ: الشاشة الأولية أو شاشة المحرر غير معرفة!");
     }
-
-    window.addEventListener('resize', debounce(() => {
-        const editorScreenActive = getElement('editor-screen')?.classList.contains('active-screen');
-        if (editorScreenActive) {
-            const project = getCurrentProject();
-            if (project) updateCanvasDimensions(project.aspectRatio);
-        }
-    }, 250));
-
-    const editorScreenEl = getElement('editor-screen');
-    if (editorScreenEl) {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.target.id === 'editor-screen') {
-                    if (entry.isIntersecting && entry.target.classList.contains('active-screen')) {
-                        startPreviewRenderLoop();
-                    } else {
-                        stopPreviewRenderLoop();
-                    }
-                }
-            });
-        }, { threshold: 0.1 });
-        observer.observe(editorScreenEl);
-    }
-
-    // --- مستمعات Event Bus ---
-    eventBus.on('quranSelectionChanged', (project) => { if(project) updateUIFromProject(project); });
-    eventBus.on('backgroundChanged', (project) => {
-        if(project) {
-            clearBackgroundElementsCache();
-            updateAIBackgroundSelectionUI(project); // تحديث تحديد AI
-            updatePreview(); // تحديث المعاينة
-        }
-    });
-    eventBus.on('textStyleChanged', () => updatePreview()); // لا حاجة لتمرير المشروع إذا كان updatePreview سيحصل عليه
-    eventBus.on('videoDimensionsChanged', (project) => { if(project) updateCanvasDimensions(project.aspectRatio); });
-    eventBus.on('videoFilterChanged', (project) => {
-        if(project) {
-            applyVideoFilterToCanvasEl(project.videoFilter);
-            updatePreview();
-        }
-    });
-    eventBus.on('projectStateRestoredByUndo', (project) => { if(project) updateUIFromProject(project); });
-    eventBus.on('projectStateRestoredByRedo', (project) => { if(project) updateUIFromProject(project); });
-    eventBus.on('projectSaved', (project) => { if(project) refreshProjectsListView(); });
-    eventBus.on('projectSet', (project) => { if(project) updateUIFromProject(project); }); // عند استدعاء setCurrentProject
-    eventBus.on('newProjectCreated', (project) => { // بعد إنشاء مشروع جديد بنجاح
-        if(project) openPanel('quran-selection-panel'); // فتح لوحة القرآن
-    });
-    eventBus.on('projectLoadedInEditor', (project) => { // بعد تحميل مشروع في المحرر
-        if(project) openPanel('quran-selection-panel');
-    });
 }
 
 /**
- * الدالة الرئيسية لتهيئة التطبيق (يتم استدعاؤها بعد تحميل DOM).
+ * دالة للانتقال إلى الشاشة الأولية
  */
-async function main() {
-    console.log("main: بدء تهيئة التطبيق...");
+function switchToInitialScreen() {
+    if (initialScreen && editorScreen) {
+        editorScreen.classList.remove('active-screen');
+        editorScreen.style.display = 'none';
 
-    // 0. تهيئة الوحدات الأساسية جداً
-    initializeAppSettings();
-    initializeTheme();
-    initializeNotifications();
-    initializeModals();
+        initialScreen.classList.add('active-screen');
+        initialScreen.style.display = 'flex';
+        console.log("APP: تم التبديل إلى الشاشة الأولية.");
+        // هنا لاحقًا سنضيف: refreshProjectsListView();
+        // وهنا لاحقًا سنضيف: closeAllPanels();
+    } else {
+        console.error("APP: switchToInitialScreen - خطأ: الشاشة الأولية أو شاشة المحرر غير معرفة!");
+    }
+}
 
-    // 1. تهيئة وحدات البيانات والخدمات (التي لا تعتمد على واجهة مستخدم معقدة بعد)
-    initializeAudioDataLoader();
+/**
+ * دالة تهيئة مستمعي الأحداث الأساسية.
+ */
+function initializeCoreEventListeners() {
+    console.log("APP: initializeCoreEventListeners - بدء تهيئة مستمعي الأحداث...");
 
-    // 2. تهيئة وحدات واجهة المستخدم الرئيسية (التي قد تحتاجها وحدات أخرى)
-    initializePanelManager(); // مهم قبل محاولة فتح أي لوحة
-    initializeCanvasPreview(); // مهم قبل أي محاولة للرسم
+    if (themeToggleInitialBtn) {
+        themeToggleInitialBtn.addEventListener('click', () => {
+            console.log("APP: زر تبديل الثيم (الأولي) تم النقر عليه.");
+            try {
+                toggleTheme();
+            } catch (e) {
+                console.error("APP: خطأ عند تبديل الثيم:", e);
+            }
+        });
+        console.log("APP: تم ربط مستمع لزر 'theme-toggle-initial'.");
+    }
 
-    // 3. تهيئة باقي وحدات الميزات
-    initializeQuranSelectUI();
-    initializeQuranSpeechInput();
-    initializeBackgroundImport();
-    initializeAIBackgroundSuggest();
-    initializeTextStyleControls();
-    initializeVideoDimensionsControls();
-    initializeVideoFiltersControls();
-    initializeMainAudioPlayback();
-    initializeTimelineControls();
-    initializeBackgroundMusic();
-    initializeAudioExtraction();
-    initializeUndoRedo();
-    initializeExportOptionsUI();
-    initializeVideoExport();
-    
-    // 4. تهيئة إجراءات المشروع (تعتمد على تهيئة وحدات مثل Modals)
-    // هذه هي التي تربط الأحداث بأزرار مثل "إنشاء فيديو جديد"
-    initializeProjectActions(); 
+    // زر تبديل الثيم في شاشة المحرر (إذا وجد)
+    if (themeToggleEditorBtn) {
+         themeToggleEditorBtn.addEventListener('click', () => {
+            console.log("APP: زر تبديل الثيم (المحرر) تم النقر عليه.");
+            try {
+                toggleTheme();
+            } catch (e) {
+                console.error("APP: خطأ عند تبديل الثيم من المحرر:", e);
+            }
+        });
+        console.log("APP: تم ربط مستمع لزر 'theme-toggle-editor'.");
+    }
 
-    // 5. تحميل البيانات الأساسية للتطبيق (مثل بيانات القرآن)
+
+    if (goToEditorBtn) {
+        goToEditorBtn.addEventListener('click', () => {
+            console.log("APP: زر 'إنشاء فيديو جديد' تم النقر عليه.");
+            // --- هذا هو المكان الذي سنضيف فيه منطق إنشاء المشروع لاحقًا ---
+            // حاليًا، سنقوم بالتبديل مباشرة
+            // 1. لاحقًا: استدعاء دالة من project-actions.js مثل handleCreateNewProjectClick()
+            // 2. هذه الدالة ستقوم بـ:
+            //    - عرض showPrompt لاسم المشروع
+            //    - إنشاء كائن مشروع جديد
+            //    - setCurrentProject(newProject)
+            //    - saveProjectToStorage(newProject)
+            //    - refreshProjectsListView()
+            //    - switchToEditorScreen() // هذه الدالة ستقوم بتحديث الواجهة وفتح اللوحة
+            
+            // للتشخيص الآن، فقط التبديل:
+            switchToEditorScreen(); 
+            // لاحقًا، بعد أن يعمل هذا، سنضيف استدعاء لـ updateUIFromProject و openPanel
+            // داخل switchToEditorScreen أو بعدها مباشرة.
+        });
+        console.log("APP: تم ربط مستمع لزر 'go-to-editor-btn'.");
+    }
+
+    if (backToInitialScreenBtn) {
+        backToInitialScreenBtn.addEventListener('click', () => {
+            console.log("APP: زر 'العودة' تم النقر عليه.");
+            // لاحقًا: إضافة منطق سؤال الحفظ
+            switchToInitialScreen();
+        });
+        console.log("APP: تم ربط مستمع لزر 'back-to-initial-screen-btn'.");
+    }
+    console.log("APP: initializeCoreEventListeners - اكتملت تهيئة مستمعي الأحداث.");
+}
+
+
+/**
+ * الدالة الرئيسية لتهيئة التطبيق.
+ */
+async function mainAppInitializer() {
+    console.log("APP: mainAppInitializer - بدء تهيئة التطبيق...");
+
+    // 0. جلب عناصر DOM أولاً وقبل كل شيء
+    cacheDOMElements();
+
+    // 1. تهيئة الثيم (يعتمد على body و localStorage فقط)
     try {
-        await withSpinner(async () => {
-            const staticData = await loadQuranStaticData();
-            if (staticData && staticData.surahs && staticData.reciters && staticData.translations) {
-                populateSurahSelect(staticData.surahs);
-                populateReciterSelect(staticData.reciters);
-                populateTranslationSelect(staticData.translations);
-            } else {
-                throw new Error("بيانات القرآن الأساسية المسترجعة غير مكتملة أو فارغة.");
-            }
-        });
-    } catch (error) {
-        handleError(error, "main: فشل تحميل بيانات القرآن الأساسية");
-        showNotification({ type: 'error', message: 'خطأ حرج: فشل تحميل بيانات القرآن. لا يمكن متابعة تحميل التطبيق بشكل صحيح.', duration: 0 });
-        return; // إيقاف التهيئة إذا فشلت هذه الخطوة الحرجة
+        initializeTheme(); // هذه الدالة يجب أن تطبق الثيم المحفوظ أو الافتراضي
+        console.log("APP: mainAppInitializer - تم تهيئة الثيم.");
+    } catch (e) {
+        console.error("APP: mainAppInitializer - خطأ فادح أثناء تهيئة الثيم:", e);
+        alert("حدث خطأ أثناء تحميل إعدادات المظهر. قد لا يعمل التطبيق بشكل صحيح.");
+        // قد يكون من المناسب إيقاف باقي التهيئة هنا إذا كان الثيم ضروريًا جدًا
     }
 
-    // 6. تحديد أو إنشاء المشروع الحالي
-    const lastProjectId = getLastOpenedProjectId();
-    let projectToStartWith = null;
-    if (lastProjectId) {
-        projectToStartWith = getProjectById(lastProjectId);
-    }
-
-    if (projectToStartWith && isValidProject(projectToStartWith)) {
-        setCurrentProject(projectToStartWith);
-        console.log("main: تم تحميل آخر مشروع مفتوح:", projectToStartWith.name);
-    } else {
-        if (lastProjectId) console.warn(`main: لم يتم العثور على آخر مشروع (ID: ${lastProjectId}) أو أنه غير صالح.`);
-        setCurrentProject(createNewProject()); // ابدأ بمشروع جديد تمامًا
-        console.log("main: تم إنشاء مشروع جديد افتراضي.");
-    }
+    // 2. تهيئة مستمعي الأحداث الأساسية (للأزرار الموجودة في HTML مباشرة)
+    initializeCoreEventListeners();
     
-    // 7. تحديث الواجهة بالكامل بناءً على المشروع المحدد والانتقال للشاشة المناسبة
-    const current = getCurrentProject();
-    updateUIFromProject(current); // يجب أن يتم هذا *بعد* setCurrentProject
+    // 3. تأكد من أن الشاشة الأولية هي المعروضة في البداية
+    // هذا تم نقله إلى initializeCoreEventListeners لضمان حدوثه بعد cacheDOMElements
+    // ولكن يمكن التأكيد عليه هنا أيضًا
+    if (initialScreen && editorScreen) {
+        initialScreen.style.display = 'flex';
+        initialScreen.classList.add('active-screen');
+        editorScreen.style.display = 'none';
+        editorScreen.classList.remove('active-screen');
+    } else {
+        console.error("APP: mainAppInitializer - لا يمكن ضبط الشاشات الأولية لأن العناصر غير موجودة!");
+    }
 
-    // بشكل افتراضي، نبدأ بالشاشة الأولية
-    switchToInitialScreen();
-    // closeAllPanels(); // switchToInitialScreen يجب أن تتعامل مع هذا
 
-    // 8. إعداد مستمعي الأحداث العامة
-    setupGlobalEventListeners();
+    // --- هنا سنبدأ بإضافة تهيئة الوحدات الأخرى تدريجيًا ---
+    // مثال:
+    // console.log("APP: mainAppInitializer - تهيئة PanelManager...");
+    // try {
+    //     initializePanelManager(); // افترض أن هذا الملف موجود وسليم
+    // } catch (e) { console.error("APP: خطأ في تهيئة PanelManager:", e); }
 
-    eventBus.emit('appInitialized');
-    console.log("main: تم الانتهاء من تهيئة التطبيق بنجاح!");
+    // console.log("APP: mainAppInitializer - تهيئة ProjectActions (بدون استدعاء تحميل البيانات بعد)...");
+    // try {
+    //     initializeProjectActions(); // هذا سيربط الأحداث مثل delete, duplicate (لا تستدعي createAndEditNewProject من هنا مباشرة)
+    // } catch (e) { console.error("APP: خطأ في تهيئة ProjectActions:", e); }
+    
+    // ... وهكذا
+
+    console.log("APP: mainAppInitializer - اكتملت التهيئة الأساسية. الوظائف الكاملة ستُضاف تدريجيًا.");
+    alert("تم تحميل التطبيق بوضع التشخيص الأساسي. زر 'إنشاء فيديو جديد' وزر تبديل الثيم يجب أن يعملا الآن بشكل مبدئي.");
 }
 
 // --- نقطة انطلاق التطبيق ---
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', main);
+    document.addEventListener('DOMContentLoaded', mainAppInitializer);
 } else {
-    main();
+    mainAppInitializer();
 }
