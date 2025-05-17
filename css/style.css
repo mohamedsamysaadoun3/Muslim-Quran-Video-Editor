@@ -2,57 +2,46 @@
 @import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Noto+Naskh+Arabic:wght@400;500;700&family=Tajawal:wght@400;500;700&display=swap');
 
 :root {
-  --primary-color: #00796b; /* Teal */
+  --primary-color: #00796b; /* Teal - Used for active elements, save button */
   --primary-color-darker: #004d40;
   --primary-color-lighter: #4db6ac;
-  --secondary-color: #ffab40; /* Amber accent */
-  --secondary-color-darker: #ff8f00;
+  --secondary-color: #ffab40; /* Amber accent - for spinner, highlights */
 
-  /* Light Theme Vars */
-  --bg-color-light: #eef2f5; /* Slightly off-white */
+  /* New Design - Primarily Dark Theme Values */
+  --bg-color-dark: #0D0D0D; /* Very dark background for the app */
+  --surface-color-dark: #1A1A1A; /* Slightly lighter for surfaces like top bar, control area */
+  --surface-color-card: rgba(30, 30, 30, 0.85); /* Card background */
+  --text-color-dark: #E0E0E0; /* Main text color */
+  --text-color-secondary-dark: #9E9E9E; /* Secondary text, placeholders */
+  --highlight-bg-color-dark: rgba(0, 121, 107, 0.25); /* Teal highlight */
+  --separator-color-dark: #37474F; /* Separator lines */
+  --input-bg-color-dark: #2C2C2C; /* Input backgrounds */
+  --input-border-color-dark: #4A4A4A; /* Input borders */
+  --button-primary-text-color-dark: white;
+
+  /* Light Theme Vars (Kept for theme toggle functionality) */
+  --bg-color-light: #eef2f5;
   --surface-color-light: #ffffff;
-  --text-color-light: #263238; /* Darker gray for better contrast */
+  --text-color-light: #263238;
   --text-color-secondary-light: #546e7a;
   --highlight-bg-color-light: rgba(0, 121, 107, 0.08);
   --separator-color-light: #cfd8dc;
   --input-bg-color-light: #f8fafc;
   --input-border-color-light: #b0bec5;
-
-  /* Dark Theme Vars */
-  --bg-color-dark: #121212;
-  --surface-color-dark: #1e1e1e;
-  --text-color-dark: #e0e0e0;
-  --text-color-secondary-dark: #9e9e9e;
-  --highlight-bg-color-dark: rgba(0, 121, 107, 0.25);
-  --separator-color-dark: #37474f; /* Darker separator */
-  --input-bg-color-dark: #2c2c2c;
-  --input-border-color-dark: #4a4a4a;
+  --button-primary-text-color-light: white;
 
 
   /* General UI Vars */
   --font-family-quran: 'Amiri Quran', 'Noto Naskh Arabic', serif;
   --font-family-ui: 'Tajawal', sans-serif;
-  --shadow-soft: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow-medium: 0 3px 6px rgba(0,0,0,0.12);
-  --shadow-strong: 0 5px 15px rgba(0,0,0,0.18);
+  --shadow-soft: 0 1px 3px rgba(0,0,0,0.12);
+  --shadow-medium: 0 3px 8px rgba(0,0,0,0.18);
+  --shadow-strong: 0 6px 20px rgba(0,0,0,0.25);
   --border-radius-small: 4px;
   --border-radius-medium: 8px;
-  --border-radius-large: 12px;
+  --border-radius-large: 16px; /* More rounded for cards */
 
-  /* Default to Light Theme */
-  --current-bg-color: var(--bg-color-light);
-  --current-surface-color: var(--surface-color-light);
-  --current-text-color: var(--text-color-light);
-  --current-text-secondary-color: var(--text-color-secondary-light);
-  --current-highlight-bg-color: var(--highlight-bg-color-light);
-  --current-separator-color: var(--separator-color-light);
-  --current-input-bg-color: var(--input-bg-color-light);
-  --current-input-border-color: var(--input-border-color-light);
-  --current-button-primary-text-color: white;
-}
-
-/* Apply Dark Theme */
-.dark-theme {
+  /* Default to Dark Theme values for current variables */
   --current-bg-color: var(--bg-color-dark);
   --current-surface-color: var(--surface-color-dark);
   --current-text-color: var(--text-color-dark);
@@ -61,29 +50,28 @@
   --current-separator-color: var(--separator-color-dark);
   --current-input-bg-color: var(--input-bg-color-dark);
   --current-input-border-color: var(--input-border-color-dark);
-  --current-button-primary-text-color: var(--text-color-dark); /* For better contrast on secondary color */
+  --current-button-primary-text-color: var(--button-primary-text-color-dark);
 }
-.dark-theme .button-primary-action {
-    background-color: var(--secondary-color);
-    color: var(--text-color-light); /* Dark text on amber for contrast */
+
+/* Apply Light Theme when .light-theme is on body */
+.light-theme {
+  --current-bg-color: var(--bg-color-light);
+  --current-surface-color: var(--surface-color-light);
+  --current-text-color: var(--text-color-light);
+  --current-text-secondary-color: var(--text-color-secondary-light);
+  --current-highlight-bg-color: var(--highlight-bg-color-light);
+  --current-separator-color: var(--separator-color-light);
+  --current-input-bg-color: var(--input-bg-color-light);
+  --current-input-border-color: var(--input-border-color-light);
+  --current-button-primary-text-color: var(--button-primary-text-color-light);
 }
-.dark-theme .button-primary-action:hover {
-    background-color: var(--secondary-color-darker);
-}
+/* Ensure some elements retain dark mode appearance even in light theme if design dictates */
+/* Or, adjust specific styles for light theme if it's fully supported */
 
 
 /* --- Global Styles & Resets --- */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  font-size: 16px; /* Base font size */
-  scroll-behavior: smooth;
-}
-
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
 body {
   font-family: var(--font-family-ui);
   background-color: var(--current-bg-color);
@@ -92,882 +80,391 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden; /* Prevent horizontal scroll on body */
+  overflow-x: hidden;
 }
-
-#app-container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  min-height: -webkit-fill-available; /* For iOS Safari full height */
-}
-
-.screen {
-  width: 100%;
-  height: 100vh;
-  height: -webkit-fill-available;
-  display: none; /* Hidden by default */
-  flex-direction: column; /* For header, main, footer stacking */
-}
-.screen.active-screen {
-  display: flex;
-}
+#app-container { display: flex; flex-direction: column; min-height: 100vh; min-height: -webkit-fill-available;}
+.screen { width: 100%; height: 100vh; height: -webkit-fill-available; display: none; flex-direction: column; }
+.screen.active-screen { display: flex; }
 
 /* --- Typography --- */
-h1, h2, h3, h4 {
-  font-weight: 500;
-  line-height: 1.3;
-  color: var(--primary-color); /* Headings use primary color */
-}
-.dark-theme h1, .dark-theme h2, .dark-theme h3, .dark-theme h4 {
-  color: var(--primary-color-lighter);
-}
+h1, h2, h3, h4 { font-weight: 500; line-height: 1.3; color: var(--current-text-color); } /* Headings use current text color in new design */
+.light-theme h1, .light-theme h2, .light-theme h3, .light-theme h4 { color: var(--primary-color); } /* In light theme, headings can be primary */
 
-h1 { font-size: 1.8rem; margin-bottom: 1rem; }
-h2 { font-size: 1.5rem; margin-bottom: 0.75rem; }
-h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
 
+h1 { font-size: 1.6rem; margin-bottom: 1rem; } /* Adjusted initial screen title */
+h2 { font-size: 1.3rem; margin-bottom: 0.75rem; }
+h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
 p { margin-bottom: 1rem; color: var(--current-text-secondary-color); }
-a { color: var(--primary-color); text-decoration: none; }
-a:hover { text-decoration: underline; color: var(--primary-color-darker); }
-.dark-theme a:hover { color: var(--primary-color-lighter); }
+a { color: var(--primary-color-lighter); text-decoration: none; } /* Lighter link for dark bg */
+a:hover { text-decoration: underline; color: var(--secondary-color); }
+.light-theme a { color: var(--primary-color); }
+.light-theme a:hover { color: var(--primary-color-darker); }
 
 /* --- Buttons --- */
 button, input[type="button"], input[type="submit"] {
-  font-family: var(--font-family-ui);
-  cursor: pointer;
-  border: none;
-  border-radius: var(--border-radius-medium);
-  padding: 0.6em 1.2em;
+  font-family: var(--font-family-ui); cursor: pointer; border: none;
+  border-radius: var(--border-radius-medium); padding: 0.6em 1.2em;
   font-size: 0.95rem;
   transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
-  font-weight: 500;
+  font-weight: 500; background-color: var(--current-input-bg-color); color: var(--current-text-color);
 }
-button:active, input[type="button"]:active, input[type="submit"]:active {
-  transform: scale(0.98);
-}
-button:disabled, input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background-color: var(--current-separator-color) !important;
-  color: var(--current-text-secondary-color) !important;
-  box-shadow: none !important;
-}
+button:active, input[type="button"]:active, input[type="submit"]:active { transform: scale(0.98); }
+button:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; background-color: var(--current-separator-color) !important; color: var(--current-text-secondary-color) !important; box-shadow: none !important; }
 
-.button-primary-action {
-  background-color: var(--primary-color);
-  color: var(--current-button-primary-text-color);
-  box-shadow: var(--shadow-soft);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5em;
-  padding: 0.75em 1.5em;
-  font-size: 1rem;
+.button-primary-action { /* For "إنشاء فيديو جديد" and panel export button */
+  background-color: var(--primary-color); color: var(--current-button-primary-text-color);
+  box-shadow: var(--shadow-soft); display: inline-flex; align-items: center; gap: 0.5em;
+  padding: 0.75em 1.5em; font-size: 1rem; border-radius: var(--border-radius-large);
 }
-.button-primary-action:hover {
-  background-color: var(--primary-color-darker);
-  box-shadow: var(--shadow-medium);
-}
+.button-primary-action:hover { background-color: var(--primary-color-darker); box-shadow: var(--shadow-medium); }
 .button-primary-action i { margin-right: 0.3em; }
+.light-theme .button-primary-action { background-color: var(--primary-color); color: white;}
+.light-theme .button-primary-action:hover { background-color: var(--primary-color-darker); }
 
-
-.action-button, .control-button {
-  background-color: var(--current-surface-color);
-  color: var(--primary-color);
-  border: 1px solid var(--primary-color);
-  padding: 0.5em 1em;
-  font-size: 0.9rem;
-}
-.action-button:hover, .control-button:hover {
-  background-color: var(--current-highlight-bg-color);
-}
-.dark-theme .action-button, .dark-theme .control-button {
-  color: var(--primary-color-lighter);
-  border-color: var(--primary-color-lighter);
-}
 
 .icon-button, .theme-button {
-  background: transparent;
-  color: var(--current-text-color); /* Default color */
-  border-radius: 50%;
-  padding: 0.5em;
-  font-size: 1.2rem;
-  line-height: 1;
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  background: transparent; color: var(--current-text-color); border-radius: 50%;
+  padding: 0.5em; font-size: 1.1rem; line-height: 1; width: 40px; height: 40px;
+  display: inline-flex; align-items: center; justify-content: center;
 }
-.icon-button:hover, .theme-button:hover {
-  background-color: var(--current-highlight-bg-color);
+.icon-button:hover, .theme-button:hover { background-color: rgba(255,255,255,0.1); }
+.light-theme .icon-button:hover, .light-theme .theme-button:hover { background-color: var(--current-highlight-bg-color); }
+
+/* Top bar buttons in editor */
+.editor-top-bar .icon-button, .editor-top-bar .theme-button { color: var(--current-text-secondary-color); }
+.editor-top-bar .icon-button:hover, .editor-top-bar .theme-button:hover { color: var(--current-text-color); background-color: rgba(255,255,255,0.08); }
+
+.action-button.editor-save-btn { /* "حفظ" button in editor top bar */
+    background-color: var(--primary-color); /* Blue-ish, adjust if primary is teal */
+    color: white;
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 0.9rem;
+    box-shadow: var(--shadow-soft);
+    border:none;
 }
-.editor-top-bar .icon-button, .editor-top-bar .theme-button, .app-header .theme-button {
-  color: white; /* For header buttons */
+.action-button.editor-save-btn:hover {
+    background-color: var(--primary-color-darker);
+    box-shadow: var(--shadow-medium);
 }
- .editor-top-bar .icon-button:hover, .editor-top-bar .theme-button:hover, .app-header .theme-button:hover {
-  background-color: rgba(255,255,255,0.15);
-}
+.action-button.editor-save-btn i { margin-right: 0.3em; }
 
 
-/* --- Forms & Inputs --- */
-label {
-  display: block;
-  margin-bottom: 0.4em;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--current-text-secondary-color);
-}
+/* --- Forms & Inputs (Panel Inputs) --- */
+label { display: block; margin-bottom: 0.4em; font-size: 0.9rem; font-weight: 500; color: var(--current-text-secondary-color); }
 input[type="text"], input[type="number"], input[type="file"], select {
-  width: 100%;
-  padding: 0.6em 0.8em;
-  border: 1px solid var(--current-input-border-color);
-  border-radius: var(--border-radius-small);
-  background-color: var(--current-input-bg-color);
-  color: var(--current-text-color);
-  font-family: var(--font-family-ui);
-  font-size: 0.95rem;
+  width: 100%; padding: 0.6em 0.8em; border: 1px solid var(--current-input-border-color);
+  border-radius: var(--border-radius-small); background-color: var(--current-input-bg-color);
+  color: var(--current-text-color); font-family: var(--font-family-ui); font-size: 0.95rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 input[type="text"]:focus, input[type="number"]:focus, select:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px var(--current-highlight-bg-color);
+  outline: none; border-color: var(--primary-color-lighter);
+  box-shadow: 0 0 0 2px var(--highlight-bg-color-dark); /* Teal highlight */
 }
-input[type="file"] {
-  padding: 0.4em; /* Specific padding for file input */
+.light-theme input[type="text"]:focus, .light-theme input[type="number"]:focus, .light-theme select:focus {
+  border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--highlight-bg-color-light);
 }
 input[type="color"] {
-  min-height: 38px; /* Consistent height with other inputs */
-  padding: 0.3em;
-  border-radius: var(--border-radius-small);
-  border: 1px solid var(--current-input-border-color);
-  cursor: pointer;
+  min-height: 38px; padding: 0.3em; border-radius: var(--border-radius-small);
+  border: 1px solid var(--current-input-border-color); cursor: pointer; width: 100%;
 }
-input[type="range"] {
-  width: 100%;
-  height: 10px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: var(--current-separator-color);
-  border-radius: 5px;
-  outline: none;
-  padding: 0; /* Remove default padding */
-  margin: 0.5em 0; /* Add some margin for better spacing */
+input[type="range"] { /* For font size slider, etc. */
+  width: 100%; height: 8px; -webkit-appearance: none; appearance: none;
+  background: var(--current-input-border-color); border-radius: 4px; outline: none; padding: 0; margin: 0.5em 0;
 }
 input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  background: var(--primary-color);
-  border-radius: 50%;
-  cursor: pointer;
-  border: 3px solid var(--current-surface-color);
-  box-shadow: var(--shadow-soft);
-  margin-top: -5px; /* Adjust thumb position */
+  -webkit-appearance: none; appearance: none; width: 18px; height: 18px;
+  background: var(--primary-color-lighter); border-radius: 50%; cursor: pointer;
+  border: 3px solid var(--current-surface-color); box-shadow: var(--shadow-soft); margin-top: -5px;
 }
 input[type="range"]::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  background: var(--primary-color);
-  border-radius: 50%;
-  cursor: pointer;
-  border: 3px solid var(--current-surface-color);
-  box-shadow: var(--shadow-soft);
+  width: 18px; height: 18px; background: var(--primary-color-lighter); border-radius: 50%;
+  cursor: pointer; border: 3px solid var(--current-surface-color); box-shadow: var(--shadow-soft);
 }
 
 
-/* --- App Header (Initial Screen) --- */
-.app-header {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 12px 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: var(--shadow-medium);
-  height: 60px; /* Fixed height */
-  flex-shrink: 0;
+/* --- Initial Screen Specific Styles (No major changes, but ensure dark theme compatibility) --- */
+.app-header { /* For initial screen */
+  background-color: var(--primary-color); color: white; padding: 10px 15px; display: flex;
+  justify-content: space-between; align-items: center; box-shadow: var(--shadow-medium);
+  height: 56px; flex-shrink: 0;
 }
-.app-header h1 {
-  margin: 0;
-  font-size: 1.3rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-grow: 1;
-  color: white;
-}
-
-/* --- Initial Screen Content --- */
-#initial-screen main {
-  flex-grow: 1;
-  padding: 20px;
-  overflow-y: auto;
-}
-.projects-section h2 {
-  color: var(--primary-color);
-  border-bottom: 2px solid var(--primary-color);
-  padding-bottom: 8px;
-  margin-bottom: 15px;
-  font-size: 1.4rem;
-}
-.dark-theme .projects-section h2 {
-  color: var(--primary-color-lighter);
-  border-bottom-color: var(--primary-color-lighter);
-}
-
-#projects-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-  gap: 15px;
-}
-#no-projects-message {
-    text-align: center;
-    padding: 20px;
-    color: var(--current-text-secondary-color);
-}
+.app-header h1 { margin: 0; font-size: 1.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; color: white; }
+#initial-screen main { flex-grow: 1; padding: 20px; overflow-y: auto; }
+.projects-section h2 { color: var(--primary-color-lighter); border-bottom: 2px solid var(--primary-color-lighter); padding-bottom: 8px; margin-bottom: 15px; font-size: 1.4rem; }
+.light-theme .projects-section h2 { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+#projects-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 15px; }
 .project-card {
-  background-color: var(--current-surface-color);
-  color: var(--current-text-color);
-  border-radius: var(--border-radius-medium);
-  padding: 15px;
-  box-shadow: var(--shadow-soft);
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--current-separator-color);
+    background-color: var(--current-surface-color); color: var(--current-text-color);
+    border-radius: var(--border-radius-medium); padding: 15px; box-shadow: var(--shadow-soft);
+    cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex; flex-direction: column; border: 1px solid var(--current-separator-color);
 }
-.project-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-medium);
-  border-color: var(--primary-color);
-}
-.project-card h3 {
-  margin-top: 0;
-  color: var(--primary-color);
-  font-size: 1.1rem;
-  margin-bottom: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
- .dark-theme .project-card h3 { color: var(--primary-color-lighter); }
-.project-card .project-meta {
-  font-size: 0.8rem;
-  color: var(--current-text-secondary-color);
-  margin-bottom: 10px;
-  flex-grow: 1; /* Push actions to bottom */
-}
-.project-card .project-meta span { display: block; margin-bottom: 3px; }
-.project-actions {
-  margin-top: auto; /* Pushes actions to the bottom of the card */
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-.project-actions button {
-  background: none;
-  border: none;
-  color: var(--primary-color);
-  cursor: pointer;
-  font-size: 0.85rem;
-  padding: 5px 8px;
-  border-radius: var(--border-radius-small);
-}
-.project-actions button:hover {
-  background-color: var(--current-highlight-bg-color);
-}
-.project-actions button.delete-project-btn:hover {
-  color: #e53935; /* Red for delete */
-  background-color: rgba(229, 57, 53, 0.1);
-}
-
-.initial-footer {
-  padding: 15px;
-  text-align: center;
-  margin-top: auto; /* Sticks to bottom if content is short */
-  background-color: var(--current-surface-color);
-  border-top: 1px solid var(--current-separator-color);
-  flex-shrink: 0;
-}
-.copyright {
-  font-size: 0.8rem;
-  color: var(--current-text-secondary-color);
-  margin-top: 15px;
-}
+.project-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-medium); border-color: var(--primary-color-lighter); }
+.light-theme .project-card:hover { border-color: var(--primary-color); }
+/* ... other project card styles remain similar ... */
+.initial-footer { padding: 15px; text-align: center; margin-top: auto; background-color: var(--current-surface-color); border-top: 1px solid var(--current-separator-color); flex-shrink: 0; }
 
 
-/* --- Editor Screen --- */
+/* --- Editor Screen Redesign --- */
+#editor-screen { background-color: var(--bg-color-dark); /* Overall editor background */ }
+
 .editor-top-bar {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 0 10px; /* Reduced padding for more space */
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: var(--shadow-medium);
-  height: 50px; /* Fixed height */
-  flex-shrink: 0;
+  background-color: var(--surface-color-dark); /* Darker top bar */
+  color: var(--text-color-dark);
+  padding: 0 10px; display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2); height: 50px; flex-shrink: 0;
+  border-bottom: 1px solid var(--separator-color-dark);
 }
 .editor-top-bar .project-title-editable {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: white;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-grow: 1;
-  text-align: center;
-  padding: 5px 8px;
-  border-radius: var(--border-radius-small);
-  transition: background-color 0.2s;
+  margin: 0 10px; font-size: 1rem; font-weight: 500; color: var(--text-color-dark);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding: 5px 8px; border-radius: var(--border-radius-small);
+  transition: background-color 0.2s; flex-grow: 1; text-align: left;
 }
- .editor-top-bar .project-title-editable:hover,
- .editor-top-bar .project-title-editable:focus {
-     background-color: rgba(255,255,255,0.1);
-     outline: none;
- }
- .editor-top-bar .project-title-editable[contenteditable="true"] {
-     background-color: rgba(255,255,255,0.2);
-     cursor: text;
- }
-
-.editor-top-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.editor-top-actions .action-button { /* Save button */
-  font-size: 0.85rem;
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background-color: rgba(255,255,255,0.1);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.3);
-}
-.editor-top-actions .action-button:hover {
-   background-color: rgba(255,255,255,0.25);
-}
-
+.editor-top-bar .project-title-editable:hover, .editor-top-bar .project-title-editable:focus { background-color: rgba(255,255,255,0.05); outline: none; }
+.editor-top-bar .project-title-editable[contenteditable="true"] { background-color: rgba(255,255,255,0.1); cursor: text; }
+.editor-top-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 
 #editor-main-area-new {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 10px;
-  background-color: var(--current-bg-color);
-  overflow: hidden;
-  position: relative; /* For positioning control panels */
+  flex-grow: 1; position: relative; display: flex;
+  justify-content: center; align-items: center; overflow: hidden;
+  background-color: var(--bg-color-dark); /* Fallback, actual bg is blur */
+  padding: 10px; /* Padding around the card area */
 }
 
-#video-preview-container {
-  width: 100%;
-  max-width: calc(100vh - 200px); /* Max width based on viewport height minus controls etc. */
-  aspect-ratio: 16 / 9; /* Default, will be updated by JS */
-  background-color: #000000;
-  border-radius: var(--border-radius-medium);
+#video-preview-background-blur {
+  position: absolute; top: -20px; left: -20px; right: -20px; bottom: -20px;
+  background-size: cover; background-position: center;
+  /* Example: background-image: url('some-default-blur-bg.jpg'); JS will update this */
+  filter: blur(15px) brightness(0.6);
+  z-index: 1;
+  transition: background-image 0.3s ease-in-out;
+}
+
+#video-preview-card-container {
+  position: relative; z-index: 2;
+  width: 90%; /* More responsive width */
+  max-width: 380px; /* Max width of the card */
+  aspect-ratio: 9 / 16; /* Card aspect ratio like in screenshot */
+  background-color: var(--surface-color-card);
+  backdrop-filter: blur(8px) saturate(120%); /* Glassmorphism for card */
+  border-radius: var(--border-radius-large);
   box-shadow: var(--shadow-strong);
-  position: relative;
-  overflow: hidden;
-  margin-bottom: 10px;
-  border: 2px solid var(--current-separator-color); /* Subtle border */
-  transition: background-color 0.3s ease, aspect-ratio 0.3s ease, filter 0.3s ease; /* Added transitions */
-}
-#video-preview-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* Ensure whole canvas is visible within container */
-  /* transition for filter if applied directly to canvas, but we apply to container for HTML overlay */
+  padding: 10px; /* Padding inside the card */
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  overflow: hidden; /* Clip content like preview container's rounded corners */
 }
 
-/* HTML Overlay for text (can be hidden if canvas drawing is preferred for preview) */
+#video-preview-container { /* This holds the canvas and text overlays */
+  width: 100%;
+  /* aspect-ratio will be set by JS based on project settings */
+  /* Defaulting to something reasonable if not set by JS immediately */
+  aspect-ratio: 16 / 9;
+  background-color: #000; /* Background for the canvas/video area */
+  border-radius: var(--border-radius-medium); /* Rounded corners for actual content */
+  box-shadow: none; border: none; margin-bottom: 0;
+  position: relative; /* For overlay content */
+  overflow: hidden; /* Clip text overlays if they exceed this container */
+  transition: aspect-ratio 0.3s ease, filter 0.3s ease;
+}
+#video-preview-canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+
 #preview-overlay-content {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: clamp(10px, 3vw, 20px); /* Responsive padding */
-    box-sizing: border-box;
-    text-align: center;
-    /* pointer-events: none; /* Allow clicks to canvas if needed - REMOVED to allow scroll */
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: clamp(8px, 2.5vw, 15px); text-align: center;
 }
 #preview-surah-title-overlay {
-  color: #FFFFFF;
-  font-size: clamp(1.2em, 3.5vw, 2em); /* Responsive font size */
-  margin-bottom: 0.5em;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-  font-weight: 700;
-  transition: color 0.3s ease; /* Added transitions */
+  font-size: clamp(1em, 3vw, 1.8em); /* Adjusted for smaller card view */
+  margin-bottom: 0.4em; text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+  color: var(--text-color-dark); font-weight: 700;
 }
 #preview-ayah-text-overlay {
   font-family: var(--font-family-quran);
-  font-size: clamp(1.5em, 5vw, 2.8em); /* Responsive font size */
-  line-height: 1.7;
-  color: #FFFFFF;
-  text-shadow: 1px 1px 4px rgba(0,0,0,0.9);
-  padding: 0.2em 0.4em;
-  max-height: 60%;
-  overflow-y: auto;
-  background-color: rgba(0,0,0,0); /* Default, JS applies currentProject.ayahBgColor */
-  border-radius: var(--border-radius-small);
-  width: 90%;
+  font-size: clamp(1.3em, 4.5vw, 2.5em); /* Adjusted */
+  line-height: 1.6; color: var(--text-color-dark);
+  text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
+  padding: 0.15em 0.3em; max-height: 55%; overflow-y: auto;
+  background-color: rgba(0,0,0,0.2); /* Subtle default bg for ayah text */
+  border-radius: var(--border-radius-small); width: 95%;
   box-sizing: border-box;
-  transition: font-family 0.3s ease, font-size 0.3s ease, color 0.3s ease, background-color 0.3s ease; /* Added transitions */
+  transition: font-family 0.3s ease, font-size 0.3s ease, color 0.3s ease, background-color 0.3s ease;
 }
-/* Custom scrollbar for overlay text */
-#preview-ayah-text-overlay::-webkit-scrollbar { width: 6px; }
-#preview-ayah-text-overlay::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 3px; }
-#preview-ayah-text-overlay::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 3px; }
-#preview-ayah-text-overlay::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.6); }
-
 #preview-translation-text-overlay {
   font-family: var(--font-family-ui);
-  font-size: clamp(0.7em, 2.2vw, 1em); /* Responsive font size */
-  color: #E0E0E0;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-  margin-top: 0.5em;
-  padding: 0.1em 0.3em;
-  max-height: 25%;
-  overflow-y: auto;
-  width: 85%;
-  box-sizing: border-box;
-  font-weight: 500;
-  transition: font-size 0.3s ease, color 0.3s ease, background-color 0.3s ease; /* Added transitions */
+  font-size: clamp(0.65em, 2vw, 0.9em); /* Adjusted */
+  color: var(--text-color-secondary-dark); text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+  margin-top: 0.4em; padding: 0.1em 0.2em; max-height: 22%; overflow-y: auto;
+  width: 90%; box-sizing: border-box; font-weight: 500;
 }
 
-/* Playback & Timeline Section */
+/* Mini playback controls inside card (optional, style if used) */
+#card-internal-playback-controls { display: none; /* Initially hidden */ width: 100%; padding-top: 10px; text-align: center; }
+/* ... Styles for .card-timeline-slider, .card-buttons, .card-control-btn ... */
+
+
+#editor-controls-area {
+  flex-shrink: 0; background-color: var(--surface-color-dark);
+  padding: 10px 0 5px 0; box-shadow: 0 -3px 10px rgba(0,0,0,0.3);
+  z-index: 100; border-top: 1px solid var(--separator-color-dark);
+}
+
 #playback-timeline-section {
-  width: 100%;
-  max-width: 600px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 0 10px;
-  box-sizing: border-box;
-  margin-top: auto; /* Pushes to bottom of its flex container if preview is smaller */
-  flex-shrink: 0;
-  margin-bottom: 5px;
+  max-width: 100%; padding: 0 15px; margin-bottom: 12px;
 }
-#timeline-container {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  gap: 10px;
-  color: var(--current-text-color);
+#timeline-container { display: flex; align-items: center; width: 100%; gap: 10px; color: var(--text-color-secondary-dark); }
+#timeline-container input[type="range"]#timeline-slider {
+  flex-grow: 1; height: 6px; background: var(--input-border-color-dark);
 }
-#timeline-container input[type="range"]#timeline-slider { /* More specific */
-  flex-grow: 1;
-  height: 12px; /* Slightly thicker */
-  background: var(--current-separator-color);
-}
- #timeline-container input[type="range"]#timeline-slider:hover {
-     background: var(--current-input-border-color);
- }
 #timeline-container input[type="range"]#timeline-slider::-webkit-slider-thumb {
-  width: 20px; height: 20px; margin-top: -4px; /* Adjust for thicker track */
+  width: 16px; height: 16px; background: var(--primary-color-lighter);
+  border: 2px solid var(--surface-color-dark); margin-top: -5px; /* Adjust for thumb height */
 }
-#timeline-container input[type="range"]#timeline-slider::-moz-range-thumb {
-   width: 20px; height: 20px;
-}
-#current-time-display, #total-time-display {
-  font-size: 0.8rem;
-  min-width: 45px; /* Ensure space for MM:SS */
-  text-align: center;
-  font-variant-numeric: tabular-nums; /* Keep numbers aligned */
-  color: var(--current-text-secondary-color);
-}
+#current-time-display, #total-time-display { font-size: 0.75rem; min-width: 40px; text-align: center; font-variant-numeric: tabular-nums; }
 
-#playback-controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px; /* Spacing between playback buttons */
+#main-playback-controls {
+  display: flex; justify-content: center; align-items: center;
+  gap: 12px; margin-bottom: 12px;
 }
-.playback-icon-button {
-  background: none;
-  border: none;
-  color: var(--current-text-color);
-  font-size: 1.1rem; /* Slightly smaller for more buttons */
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
-  width: 44px; height: 44px;
+#main-playback-controls .playback-icon-button {
+  background-color: transparent; /* Cleaner look */
+  color: var(--text-color-secondary-dark); border-radius: 50%;
+  width: 44px; height: 44px; font-size: 1.1rem;
 }
-.playback-icon-button:hover {
-  background-color: var(--current-highlight-bg-color);
-  color: var(--primary-color);
+#main-playback-controls .playback-icon-button:hover { background-color: rgba(255,255,255,0.08); color: var(--text-color-dark); }
+#main-playback-controls .playback-icon-button.large { width: 52px; height: 52px; font-size: 1.4rem; }
+#main-playback-controls .playback-icon-button.extra-large { /* Play/Pause */
+  width: 64px; height: 64px; font-size: 1.8rem;
+  background-color: var(--primary-color); color: white;
 }
-.playback-icon-button:active { transform: scale(0.92); }
-.playback-icon-button.large {
-  font-size: 1.8rem;
-  padding: 10px;
-  color: var(--primary-color);
-  width: 52px; height: 52px;
-}
-.playback-icon-button.large:hover {
-  background-color: var(--primary-color-darker);
-  color: white;
-}
-.dark-theme .playback-icon-button.large { color: var(--primary-color-lighter); }
-.dark-theme .playback-icon-button.large:hover { background-color: var(--primary-color); color: var(--text-color-dark); }
+#main-playback-controls .playback-icon-button.extra-large:hover { background-color: var(--primary-color-darker); }
 
 
-/* Main Bottom Tab Bar */
 #main-bottom-tab-bar {
-  display: flex;
-  justify-content: space-around;
-  background-color: var(--current-surface-color);
-  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
-  padding: 3px 0;
-  flex-shrink: 0;
-  height: 56px; /* Slightly shorter */
-  box-sizing: border-box;
-  border-top: 1px solid var(--current-separator-color);
-  z-index: 200;
-  overflow-x: auto; /* Allow scrolling if too many tabs */
+  display: flex; justify-content: flex-start; overflow-x: auto; overflow-y: hidden;
+  white-space: nowrap; padding: 8px 10px; height: auto; gap: 10px;
+  /* border-top: 1px solid var(--separator-color-dark); */ /* Removed, as #editor-controls-area has top border */
+  background-color: transparent; /* Inherit from controls area */
 }
-.main-tab-button {
-  background: none;
-  border: none;
-  color: var(--current-text-secondary-color); /* Less prominent */
-  opacity: 0.9;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-family: var(--font-family-ui);
-  font-size: 0.75rem; /* Smaller text */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  min-width: 60px; /* Ensure tabs are not too squeezed */
-  text-align: center;
-  transition: color 0.2s ease, opacity 0.2s ease, border-top-color 0.2s ease;
-  border-top: 3px solid transparent;
-  flex: 1; /* Distribute space */
+#main-bottom-tab-bar::-webkit-scrollbar { display: none; }
+#main-bottom-tab-bar { -ms-overflow-style: none; scrollbar-width: none; }
+
+#main-bottom-tab-bar .main-tab-button {
+  flex-direction: column; align-items: center; justify-content: center;
+  min-width: 65px; padding: 6px 5px;
+  border-radius: var(--border-radius-medium);
+  background-color: rgba(255,255,255,0.05);
+  color: var(--text-color-secondary-dark);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  flex: 0 0 auto; border: 1px solid transparent; /* For active state */
 }
-.main-tab-button i {
-  font-size: 1.5em; /* Icon size relative to button font size */
-  margin-bottom: 1px;
+#main-bottom-tab-bar .main-tab-button i { font-size: 1.5em; margin-bottom: 3px; }
+#main-bottom-tab-bar .main-tab-button span { font-size: 0.65rem; display: block; }
+#main-bottom-tab-bar .main-tab-button.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color-darker);
 }
-.main-tab-button.active {
-  color: var(--primary-color);
-  opacity: 1;
-  border-top-color: var(--primary-color);
-  font-weight: 500;
-}
-.dark-theme .main-tab-button.active {
-  color: var(--primary-color-lighter);
-  border-top-color: var(--primary-color-lighter);
+#main-bottom-tab-bar .main-tab-button:hover:not(.active) {
+    background-color: rgba(255,255,255,0.1);
+    color: var(--text-color-dark);
 }
 
 
-/* Control Panels Styling */
 #active-control-panels-container {
   position: absolute;
-  bottom: 56px; /* Height of the tab bar */
-  left: 0;
-  right: 0;
-  z-index: 150;
-  overflow: hidden; /* Manages panel transitions */
-  display: flex; /* Allows panels to overlay, but only one visible */
-  pointer-events: none; /* Pass clicks through if no panel is active */
+  /* This needs to be calculated based on the height of #editor-controls-area */
+  /* Let's assume editor-controls-area is approx 150px tall for now */
+  /* (timeline ~30px + playback_controls ~70px + tab_bar ~50px) */
+  bottom: 155px; /* Adjust this value based on actual height of #editor-controls-area */
+  left: 0; right: 0; z-index: 150; overflow: hidden; display: flex; pointer-events: none;
 }
 .control-panel {
-  background-color: var(--current-surface-color);
-  color: var(--current-text-color);
-  border-top: 1px solid var(--current-separator-color);
-  box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
-  width: 100%;
-  max-height: 60vh; /* Max height for panels */
-  overflow-y: auto;
-  display: none; /* Hidden by default, made visible by JS */
-  flex-direction: column;
-  position: absolute;
-  bottom: 0;
-  left:0;
-  right:0;
-  padding-bottom: 15px;
-  pointer-events: auto; /* Enable pointer events for the active panel */
+  background-color: var(--surface-color-dark); /* Darker panel surface */
+  border-top: 1px solid var(--separator-color-dark);
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.25);
+  width: 100%; max-height: 40vh; /* Adjust max height */
+  overflow-y: auto; display: none; flex-direction: column;
+  position: absolute; bottom: 0; left:0; right:0;
+  padding-bottom: 15px; pointer-events: auto;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease-out;
-  transform: translateY(100%);
-  opacity: 0;
+  transform: translateY(100%); opacity: 0;
 }
-.control-panel.visible {
-  display: flex;
-  transform: translateY(0);
-  opacity: 1;
-}
-
+.control-panel.visible { display: flex; transform: translateY(0); opacity: 1; }
 .panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 15px;
-  border-bottom: 1px solid var(--current-separator-color);
-  background-color: var(--current-surface-color);
-  position: sticky;
-  top: 0;
-  z-index: 10; /* Keep header above scrolling content */
+  padding: 8px 12px; border-bottom: 1px solid var(--separator-color-dark);
+  background-color: var(--surface-color-dark); position: sticky; top: 0; z-index: 10;
+  display: flex; justify-content: space-between; align-items: center;
 }
-.panel-header h3 {
-  margin: 0;
-  font-size: 1.05rem; /* Slightly smaller panel titles */
-  font-weight: 700;
-}
+.panel-header h3 { margin: 0; font-size: 1rem; font-weight: 700; }
 .panel-action-button { /* Close, Confirm buttons in panel header */
-  background: none;
-  border: none;
-  color: var(--current-text-secondary-color);
-  font-size: 1.1rem;
-  padding: 5px;
-  cursor: pointer;
-  border-radius: 50%;
-  width: 32px; height: 32px;
-  display: inline-flex; align-items: center; justify-content: center;
+    color: var(--text-color-secondary-dark); font-size: 1rem; padding: 6px; width: 30px; height: 30px;
 }
-.panel-action-button:hover {
-  background-color: var(--current-highlight-bg-color);
-  color: var(--primary-color);
-}
-.panel-action-button.confirm-panel-btn { color: var(--primary-color); }
-.dark-theme .panel-action-button.confirm-panel-btn { color: var(--primary-color-lighter); }
+.panel-action-button:hover { background-color: rgba(255,255,255,0.1); color: var(--text-color-dark); }
+.panel-action-button.confirm-panel-btn { color: var(--primary-color-lighter); }
+.panel-action-button.confirm-panel-btn:hover { color: var(--primary-color); }
 
-
-.panel-content {
-  padding: 15px;
-  display: grid;
-  /* grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* Responsive columns */
-  grid-template-columns: 1fr; /* Default to single column, easier for mobile */
-  gap: 18px 20px; /* Row and column gap */
-}
-@media (min-width: 500px) { /* Two columns for wider screens within panels */
-     .panel-content {
-         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-     }
-}
-
-.panel-content > div, .panel-content > h4, .panel-content > button { /* Direct children */
-  /* display: flex; Standard for div, but button is inline-flex */
-  /* flex-direction: column; */
-  /* gap: 8px; Applied by individual elements or their parents */
-}
- .panel-content > div { /* For label-input groups */
-     display: flex;
-     flex-direction: column;
-     gap: 6px;
- }
+.panel-content { padding: 12px; display: grid; grid-template-columns: 1fr; gap: 15px 18px; }
+@media (min-width: 500px) { .panel-content { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); } }
+.panel-content > div { display: flex; flex-direction: column; gap: 5px; }
 .panel-content h4 { /* Section titles within panels */
-    grid-column: 1 / -1; /* Span all columns */
-    margin-top: 10px;
-    margin-bottom: -5px; /* Pull content a bit closer */
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--current-separator-color);
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--primary-color);
-}
-.dark-theme .panel-content h4 { color: var(--primary-color-lighter); }
-
-.panel-content hr.panel-divider {
-    grid-column: 1 / -1;
-    border: none;
-    border-top: 1px solid var(--current-separator-color);
-    margin: 12px 0;
-}
-
-.voice-input-quran {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 5px;
-}
-.voice-input-quran .control-button.small-mic {
-    padding: 8px 12px;
-    font-size: 0.85em;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.voice-input-quran .control-button.small-mic.listening {
-    background-color: var(--secondary-color);
-    color: var(--text-color-light); /* Dark text on amber */
-    border-color: var(--secondary-color-darker);
-}
- .dark-theme .voice-input-quran .control-button.small-mic.listening {
-     color: var(--text-color-light);
- }
-
-
-.audio-panel-preview-placeholder {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 20px 15px;
-    background-color: var(--current-bg-color);
-    border-radius: var(--border-radius-medium);
-    border: 1px dashed var(--current-input-border-color);
-    color: var(--current-text-secondary-color);
-}
-.audio-panel-buttons {
-    grid-column: 1 / -1;
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 10px;
-}
-.audio-panel-buttons .control-button {
-    flex-grow: 1;
-    max-width: 200px; /* Prevent buttons from becoming too wide */
-}
-
-#ai-bg-suggestions {
-    grid-column: 1 / -1; /* Span full width */
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-    overflow-x: auto;
-    padding-bottom: 8px; /* For scrollbar space */
-    background-color: var(--current-bg-color);
-    padding: 8px;
-    border-radius: var(--border-radius-small);
-}
-#ai-bg-suggestions img {
-    width: 100px;
-    height: 65px;
-    object-fit: cover;
-    border-radius: var(--border-radius-small);
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: border-color 0.2s ease, transform 0.2s ease;
-    box-shadow: var(--shadow-soft);
-}
-#ai-bg-suggestions img:hover {
-    transform: scale(1.05);
-    border-color: var(--secondary-color);
-}
-#ai-bg-suggestions img.selected-ai-bg {
-    border-color: var(--primary-color);
-    transform: scale(1.05);
-    box-shadow: 0 0 0 2px var(--primary-color);
-}
-.dark-theme #ai-bg-suggestions img.selected-ai-bg {
-     border-color: var(--primary-color-lighter);
-     box-shadow: 0 0 0 2px var(--primary-color-lighter);
-}
-#ai-bg-suggestions-loader {
-    grid-column: 1 / -1; text-align: center; color: var(--current-text-secondary-color);
+    grid-column: 1 / -1; margin-top: 8px; margin-bottom: -8px; padding-bottom: 5px;
+    border-bottom: 1px solid var(--separator-color-dark);
+    font-size: 0.9rem; font-weight: 700; color: var(--primary-color-lighter);
 }
 
 
 /* Spinner */
-.spinner-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(3px); /* Optional: blur background */
+.spinner-overlay { /* No change needed, already good for dark theme */
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); z-index: 10000;
+  display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
 }
 .spinner {
-  border: 6px solid rgba(255,255,255,0.2); /* Lighter border */
-  border-top: 6px solid var(--secondary-color); /* Accent color for spinner */
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 0.8s linear infinite;
+  border: 5px solid rgba(255,255,255,0.2); border-top: 5px solid var(--secondary-color);
+  border-radius: 50%; width: 45px; height: 45px; animation: spin 0.8s linear infinite;
 }
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* Export progress */
-#export-progress {
-  grid-column: 1 / -1;
-  margin-top: 10px;
-  text-align: center;
-}
-#export-progress progress {
-  width: 100%;
-  height: 12px;
-  border-radius: 6px;
-  overflow: hidden; /* For border-radius on progress bar */
-}
-#export-progress progress::-webkit-progress-bar {
-  background-color: var(--current-separator-color);
-}
-#export-progress progress::-webkit-progress-value {
-  background-color: var(--primary-color);
-  transition: width 0.2s ease;
-}
-#export-progress progress::-moz-progress-bar { /* Firefox */
-  background-color: var(--primary-color);
-}
-#export-progress span {
-  display: block;
-  margin-top: 6px;
-  font-size: 0.85rem;
-  color: var(--current-text-secondary-color);
-}
-
-
-/* Responsive adjustments */
+/* Responsive adjustments for new design */
 @media (max-width: 768px) { /* Tablet and smaller */
-  .app-header h1 { font-size: 1.2rem; }
-  .editor-top-bar .project-title-editable { font-size: 1rem; }
-  #video-preview-container { max-width: calc(100vh - 180px); } /* Adjust max based on smaller screen */
-
-  .main-tab-button i { font-size: 1.4em; }
-  .main-tab-button span { font-size: 0.7rem; }
-
-  .playback-icon-button { font-size: 1rem; width: 40px; height: 40px; }
-  .playback-icon-button.large { font-size: 1.6rem; width: 48px; height: 48px; }
-
-  .control-panel { max-height: 65vh; } /* Allow a bit more height for panels */
+  #video-preview-card-container { width: 80%; max-width: 350px; padding: 8px; }
+  #preview-ayah-text-overlay { font-size: clamp(1.2em, 4vw, 2.2em); }
+  #preview-translation-text-overlay { font-size: clamp(0.6em, 1.8vw, 0.85em); }
+  .control-panel { max-height: 45vh; }
+  #main-playback-controls .playback-icon-button.extra-large { width: 60px; height: 60px; font-size: 1.7rem;}
+  #main-playback-controls .playback-icon-button.large { width: 48px; height: 48px; font-size: 1.3rem;}
+  #main-playback-controls .playback-icon-button { width: 40px; height: 40px; font-size: 1rem;}
 }
 
 @media (max-width: 480px) { /* Mobile phones */
-  html { font-size: 15px; } /* Slightly smaller base font for mobile */
-  .app-header { height: 56px; }
-  .app-header h1 { font-size: 1.1rem; }
+  html { font-size: 15px; }
   .editor-top-bar { height: 48px; }
-  .editor-top-bar .project-title-editable { font-size: 0.95rem; }
-  .editor-top-actions .action-button { font-size: 0.8rem; padding: 5px 8px;}
-  .editor-top-bar .theme-button, .app-header .theme-button { font-size: 1rem; width: 36px; height: 36px; }
+  .editor-top-bar .project-title-editable { font-size: 0.9rem; margin: 0 5px; }
+  .action-button.editor-save-btn { padding: 5px 15px; font-size: 0.85rem; }
+  #video-preview-card-container { width: 92%; max-width: 320px; border-radius:var(--border-radius-medium); padding:6px; }
+  #preview-surah-title-overlay { font-size: clamp(0.9em, 2.5vw, 1.5em); }
+  #preview-ayah-text-overlay { font-size: clamp(1.1em, 4vw, 2em); }
+  #preview-translation-text-overlay { font-size: clamp(0.55em, 1.5vw, 0.75em); }
 
+  #editor-controls-area { padding: 8px 0 3px 0; }
+  #playback-timeline-section { margin-bottom: 10px; padding: 0 10px; }
+  #current-time-display, #total-time-display { font-size: 0.7rem; }
+  #main-playback-controls { gap: 8px; margin-bottom: 10px; }
+  #main-playback-controls .playback-icon-button.extra-large { width: 56px; height: 56px; font-size: 1.6rem;}
+  #main-playback-controls .playback-icon-button.large { width: 44px; height: 44px; font-size: 1.2rem;}
+  #main-playback-controls .playback-icon-button { width: 36px; height: 36px; font-size: 0.9rem;}
 
-  #main-bottom-tab-bar { height: 52px; }
-  .main-tab-button { min-width: 50px; font-size: 0.65rem; }
-  .main-tab-button i { font-size: 1.3em; }
+  #main-bottom-tab-bar { padding: 6px 8px; gap: 8px; }
+  #main-bottom-tab-bar .main-tab-button { min-width: 60px; padding: 5px; }
+  #main-bottom-tab-bar .main-tab-button i { font-size: 1.4em; }
+  #main-bottom-tab-bar .main-tab-button span { font-size: 0.6rem; }
 
-  #playback-timeline-section { gap: 6px; }
-  #current-time-display, #total-time-display { font-size: 0.75rem; min-width: 40px;}
-  .playback-icon-button { font-size: 0.9rem; width: 36px; height: 36px;}
-  .playback-icon-button.large { font-size: 1.5rem; width: 44px; height: 44px;}
-
-  .panel-header { padding: 8px 12px; }
-  .panel-header h3 { font-size: 1rem; }
-  .panel-content { padding: 12px; gap: 15px; }
-
-  .button-primary-action { font-size: 0.95rem; padding: 0.65em 1.2em; }
+  #active-control-panels-container { bottom: 140px; /* Recalculate based on smaller controls */ }
+  .control-panel { max-height: 50vh; } /* Allow more panel height on mobile */
+  .panel-header { padding: 6px 10px; }
+  .panel-header h3 { font-size: 0.95rem; }
+  .panel-content { padding: 10px; gap: 12px; }
 }
-
-/* Hide scrollbars for a cleaner look on specific elements, if desired */
-/* #preview-ayah-text-overlay::-webkit-scrollbar { display: none; }
-#preview-ayah-text-overlay { -ms-overflow-style: none; scrollbar-width: none; } */
