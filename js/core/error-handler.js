@@ -1,61 +1,67 @@
-/**
- * Handles an error, logs it, and potentially shows a user-friendly message.
- * @param {Error} error - The error object.
- * @param {string} context - A string describing the context where the error occurred.
- * @param {boolean} [showToUser=false] - Whether to attempt to show a notification to the user.
- */
-export function handleError(error, context = "Unknown context", showToUser = false) {
-    console.error(`[Error Handler] Error in ${context}:`, error.message, error.stack || error);
+// js/core/error-handler.js
+import eventBus from './event-bus.js'; // قد نرغب في إعلام واجهة المستخدم
 
-    if (showToUser) {
-        // Future: Integrate with a notifications module
-        // import { showErrorNotification } from '../ui/notifications.js';
-        // showErrorNotification(`An error occurred in ${context}: ${error.message}. Please try again or contact support.`);
-        alert(`حدث خطأ في "${context}": ${error.message}`); // Simple alert for now
+/**
+ * معالجة مركزية للأخطاء في التطبيق.
+ * هذه نسخة أساسية؛ يمكن توسيعها بخدمات إبلاغ عن الأخطاء (مثل Sentry).
+ */
+
+/**
+ * يعالج خطأ، يسجله، ويخطر المستخدم اختياريًا.
+ * @param {Error|string} error - كائن الخطأ أو سلسلة رسالة الخطأ.
+ * @param {string} [context="عام"] - السياق الذي حدث فيه الخطأ (مثال: "جلب API"، "عرض الكانفاس").
+ * @param {boolean} [notifyUser=true] - هل تتم محاولة إخطار المستخدم (مثال: عبر رسالة Toast).
+ */
+export function handleError(error, context = "عام", notifyUser = true) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : 'لا يوجد تتبع للمكدس.';
+
+    console.error(`[خطأ في ${context}]: ${errorMessage}`, errorStack, error);
+
+    if (notifyUser) {
+        // مثال: إطلاق حدث يمكن لمكون واجهة المستخدم الاستماع إليه لعرض الإشعارات
+        eventBus.emit('showNotification', {
+            type: 'error',
+            message: `خطأ في ${context}: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`, // إبقاء الرسالة موجزة
+            duration: 5000 // 5 ثواني
+        });
+        // في نظام أكثر قوة، ستستدعي خدمة إشعارات مخصصة هنا.
+        // حاليًا، يمكننا فقط استخدام alert، أو الاعتماد على event bus.
+        // alert(`حدث خطأ: ${errorMessage}`);
     }
 
-    // Future: Could also send error reports to a logging service for production apps
-    // reportErrorToService(error, context, getCurrentUser(), getAppState());
+    // مستقبلاً: إرسال الخطأ إلى خدمة إبلاغ مثل Sentry
+    // if (process.env.NODE_ENV === 'production') {
+    //   Sentry.captureException(error, { extra: { context } });
+    // }
 }
 
 /**
- * Wraps an async function to automatically handle its errors.
- * @param {Function} asyncFn - The async function to wrap.
- * @param {string} [context="Wrapped async function"] - Context for error reporting.
- * @param {boolean} [showToUser=false] - Whether to show errors from this function to the user.
- * @returns {Function} The wrapped async function.
+ * يغلف دالة غير متزامنة بمعالجة الأخطاء.
+ * @param {function} asyncFn - الدالة غير المتزامنة للتغليف.
+ * @param {string} [context="عملية غير متزامنة"] - سياق للإبلاغ عن الخطأ.
+ * @param {boolean} [notifyUser=true] - هل يتم إخطار المستخدم عند الخطأ.
+ * @returns {function} دالة جديدة تستدعي الدالة الأصلية غير المتزامنة مع معالجة الأخطاء.
  */
-export function withErrorHandlingAsync(asyncFn, context = "Wrapped async function", showToUser = false) {
-    return async function(...args) {
+export function withErrorHandling(asyncFn, context = "عملية غير متزامنة", notifyUser = true) {
+    return async (...args) => {
         try {
             return await asyncFn(...args);
         } catch (error) {
-            handleError(error, context, showToUser);
-            // Depending on desired behavior, re-throw or return a specific error indicator
-            // throw error; // Re-throw if the caller needs to know about the error
-            return { error: true, message: error.message, context }; // Or return an error object
+            handleError(error, context, notifyUser);
+            // اختياريًا، أعد طرح الخطأ أو أرجع كائن/قيمة خطأ محددة
+            throw error; // إعادة الطرح تسمح للمستدعي أيضًا بالمعالجة إذا لزم الأمر
         }
     };
 }
 
-/**
- * Wraps a synchronous function to automatically handle its errors.
- * @param {Function} fn - The synchronous function to wrap.
- * @param {string} [context="Wrapped function"] - Context for error reporting.
- * @param {boolean} [showToUser=false] - Whether to show errors from this function to the user.
- * @returns {Function} The wrapped function.
- */
-export function withErrorHandlingSync(fn, context = "Wrapped function", showToUser = false) {
-    return function(...args) {
-        try {
-            return fn(...args);
-        } catch (error) {
-            handleError(error, context, showToUser);
-            return { error: true, message: error.message, context };
-        }
-    };
-}
+// مستمعات الأخطاء العامة (اختيارية، ولكنها جيدة لالتقاط rejections الوعود غير المعالجة وما إلى ذلك)
+// window.addEventListener('error', (event) => {
+//     handleError(event.error, 'خطأ عام window.onerror');
+// });
 
+// window.addEventListener('unhandledrejection', (event) => {
+//     handleError(event.reason, 'رفض وعد غير معالج');
+// });
 
-console.log("[Error Handler] Module loaded.");
-```
+// console.log('تم تهيئة معالج الأخطاء.');
