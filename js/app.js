@@ -1,724 +1,328 @@
-// js/app.js
+// js/app.js - نقطة الدخول الرئيسية للتطبيق
 
-// --- DOM Elements ---
-const surahSelect = document.getElementById('surah-select');
-const ayahStartSelect = document.getElementById('ayah-start-select');
-const ayahEndSelect = document.getElementById('ayah-end-select');
-const reciterSelect = document.getElementById('reciter-select');
-const translationSelect = document.getElementById('translation-select');
+// الوحدات الأساسية (Core Modules)
+import { getElement, $, $$ } from './core/dom-loader.js';
+import { initializeTheme, getCurrentTheme } from './ui/theme-handler.js';
+import { initializePanelManager, openPanel, closeAllPanels, getCurrentOpenPanelId } from './ui/panel-manager.js';
+import { initializeNotifications, showNotification } from './ui/notifications.js';
+import { initializeModals, showModal, showConfirm, showPrompt } from './ui/modal-handler.js';
+// initializeSpinner لا تحتاج استدعاء خاص، Spinner بسيط
+import { showSpinner, hideSpinner, withSpinner } from './ui/spinner-control.js';
+import { getCurrentProject, setCurrentProject, saveState, resetHistory } from './core/state-manager.js';
+import eventBus from './core/event-bus.js';
+import { handleError } from './core/error-handler.js';
 
-const previewSurahTitle = document.getElementById('preview-surah-title-overlay');
-const previewAyahText = document.getElementById('preview-ayah-text-overlay');
-const previewTranslationText = document.getElementById('preview-translation-text-overlay');
-const mainAudioPlayer = document.getElementById('main-audio-player');
-const playPauseMainBtn = document.getElementById('play-pause-main-btn');
-const timelineSlider = document.getElementById('timeline-slider');
-const currentTimeDisplay = document.getElementById('current-time-display');
-const totalTimeDisplay = document.getElementById('total-time-display');
-const loadingSpinner = document.getElementById('loading-spinner');
+// وحدات الميزات - المشروع (Feature Modules - Project)
+import { createNewProject, touchProject } from './features/project/project-model.js';
+import { initializeProjectActions, refreshProjectsListView, switchToEditorScreen, switchToInitialScreen, saveCurrentProject, loadProjectIntoEditor, createAndEditNewProject } from './features/project/project-actions.js';
+import { getLastOpenedProjectId, getProjectById } from './features/project/project-save-load.js';
 
-const videoPreviewContainer = document.getElementById('video-preview-container');
-const bgBlurElement = document.getElementById('video-preview-background-blur');
-const canvas = document.getElementById('video-preview-canvas');
-const ctx = canvas.getContext('2d');
+// وحدات الميزات - القرآن (Feature Modules - Quran)
+import { loadQuranStaticData, loadSelectedAyahsForProject, getSurahByNumber, calculateAyahStartTimesAndTotalDuration } from './features/quran/quran-data-loader.js';
+import { populateSurahSelect, populateReciterSelect, populateTranslationSelect, updateQuranSelectUIFromProject, updateAyahSelectors, initializeQuranSelectUI } from './features/quran/quran-select-ui.js';
+import { initializeQuranSpeechInput } from './features/quran/quran-speech-input.js';
 
-const projectTitleEditor = document.getElementById('current-project-title-editor');
-const aspectRatioSelect = document.getElementById('aspect-ratio-select');
-const videoFilterSelect = document.getElementById('video-filter-select');
-const fontSelect = document.getElementById('font-select');
-const fontSizeSlider = document.getElementById('font-size-slider');
-const fontSizeValueDisplay = document.getElementById('font-size-value');
-const fontColorPicker = document.getElementById('font-color-picker');
-const ayahBgColorPicker = document.getElementById('ayah-bg-color-picker');
-const backgroundColorPicker = document.getElementById('background-color-picker');
-const delayInput = document.getElementById('delay-between-ayahs');
-const importBackgroundInput = document.getElementById('import-background');
-
-// Export related
-const exportBtn = document.getElementById('export-btn');
-const resolutionSelect = document.getElementById('resolution-select');
-const videoFormatSelect = document.getElementById('video-format-select');
-const framerateSelect = document.getElementById('framerate-select');
-const exportProgressContainer = document.getElementById('export-progress');
-const exportProgressBar = document.getElementById('export-progress-bar');
-const exportProgressText = document.getElementById('export-progress-text');
-
-let capturer = null; // For CCapture.js
+// وحدات الميزات - الخلفية (Feature Modules - Background)
+import { initializeBackgroundImport, updateBackgroundUIFromProject, applyBackground } from './features/background/background-import.js';
+import { initializeAIBackgroundSuggest, updateAIBackgroundSelectionUI } from './features/background/background-ai-suggest.js';
+import { clearBackgroundElementsCache } from './features/background/background-state.js';
 
 
-// --- API Base URLs ---
-const QURAN_API_BASE = 'https://api.alquran.cloud/v1';
+// وحدات الميزات - النص وتأثيرات الفيديو (Feature Modules - Text & Video Effects)
+import { initializeTextStyleControls, updateTextStyleControlsUI } from './features/text/text-style-controls.js';
+import { initializeVideoDimensionsControls, updateVideoDimensionsUI } from './features/video/video-dimensions.js';
+import { initializeVideoFiltersControls, updateVideoFiltersUI, applyVideoFilterToCanvasEl } from './features/video/video-filters.js';
 
-// --- App Data ---
-let quranMetaData = {
-    surahs: [],
-    reciters: [
-        { id: "ar.abdulbasitmurattal", name: "عبد الباسط عبد الصمد (مرتل)" },
-        { id: "ar.abdullahbasfar", name: "عبد الله بصفر" },
-        { id: "ar.abdurrahmaansudais", name: "عبد الرحمن السديس" },
-        { id: "ar.ahmedajamy", name: "أحمد بن علي العجمي" },
-        { id: "ar.alafasy", name: "مشاري راشد العفاسي" },
-        { id: "ar.mahermuaiqly", name: "ماهر المعيقلي" },
-        { id: "ar.minshawi", name: "محمد صديق المنشاوي" },
-    ],
-    translations: [
-        { id: "en.sahih", name: "الإنجليزية (Sahih Intl)" },
-        { id: "fr.hamidullah", name: "الفرنسية (Hamidullah)" },
-        { id: "es.cortes", name: "الإسبانية (Cortes)" },
-        { id: "de.aburida", name: "الألمانية (Abu Rida)" },
-    ],
-};
-
-// --- App State ---
-let currentProject = {}; // Will be initialized by initializeNewProject
-const MAX_HISTORY_STATES = 20;
-let projectHistory = [];
-let currentHistoryIndex = -1;
+// وحدات الميزات - الصوت (Feature Modules - Audio)
+import { initializeMainAudioPlayback, updateTimelineUI as updateAudioPlayerTimelineUI, setupAudioForNewProject as refreshAudioPlayerForProject, getOverallCurrentTime, getIsPlaying as getIsAudioPlaying } from './features/audio/main-audio-playback.js';
+import { initializeTimelineControls, updateTotalDurationDisplay, updateCurrentTimeDisplay } from './features/audio/timeline-control.js';
+import { initializeAudioDataLoader } from './features/audio/audio-data-loader.js';
+import { initializeBackgroundMusic, updateBackgroundMusicUI, syncBackgroundMusicToMainPlayback } from './features/audio/background-music.js';
+import { initializeAudioExtraction } from './features/audio/audio-extraction.js';
 
 
-// --- Utility Functions ---
-function showSpinner() { if (loadingSpinner) loadingSpinner.style.display = 'flex'; }
-function hideSpinner() { if (loadingSpinner) loadingSpinner.style.display = 'none'; }
-function formatTime(seconds) {
-    const min = Math.floor(seconds / 60);
-    const sec = Math.floor(seconds % 60).toString().padStart(2, '0');
-    return `${min}:${sec}`;
-}
+// وحدات الميزات - عناصر تحكم المحرر والإعدادات (Feature Modules - Editor Controls & Settings)
+import { initializeUndoRedo } from './features/editor-controls/undo-redo-handler.js';
+import { initializeExportOptionsUI, updateExportOptionsUIFromProject } from './features/general-settings/export-options-ui.js';
+import { initializeAppSettings } from './features/general-settings/app-settings.js';
 
-// --- Undo/Redo State Management ---
-function saveStateToHistory() {
-    // Deep clone currentProject, but exclude non-serializable parts if any (like DOM elements or large binary data)
-    // For now, a simple deep clone for basic properties.
-    const stateToSave = JSON.parse(JSON.stringify({
-        ...currentProject,
-        ayahsData: [], // Don't save full ayahsData in history for memory, refetch if needed or handle smarter
-        // Keep essential pointers:
-        surah: currentProject.surah,
-        ayahStart: currentProject.ayahStart,
-        ayahEnd: currentProject.ayahEnd,
-        reciter: currentProject.reciter,
-        translation: currentProject.translation,
-    }));
+// وحدات الميزات - معاينة الفيديو والتصدير (Feature Modules - Video Preview & Export)
+import { initializeCanvasPreview, updatePreview, updateCanvasDimensions, startPreviewRenderLoop, stopPreviewRenderLoop, findAyahAtTime, drawFrame } from './features/video/canvas-preview.js';
+import { initializeVideoExport, cancelExport } from './features/video/video-export-ccapture.js';
+// import { initializeFFmpegExport } from './features/video/video-export-ffmpeg.js'; // إذا تم استخدامه
 
 
-    projectHistory = projectHistory.slice(0, currentHistoryIndex + 1); // Truncate redo stack
-    projectHistory.push(stateToSave);
-    if (projectHistory.length > MAX_HISTORY_STATES) {
-        projectHistory.shift(); // Remove oldest state
-    }
-    currentHistoryIndex = projectHistory.length - 1;
-    updateUndoRedoButtons();
-}
+// --- المنطق الرئيسي للتطبيق ---
 
-function undoState() {
-    if (currentHistoryIndex > 0) {
-        currentHistoryIndex--;
-        loadStateFromHistory(projectHistory[currentHistoryIndex]);
-    }
-    updateUndoRedoButtons();
-}
+/**
+ * يتم استدعاؤها عند تحميل DOM بالكامل وجاهزية التطبيق.
+ */
+async function onAppReady() {
+    console.log("التطبيق جاهز، بدء التهيئة...");
 
-function redoState() {
-    if (currentHistoryIndex < projectHistory.length - 1) {
-        currentHistoryIndex++;
-        loadStateFromHistory(projectHistory[currentHistoryIndex]);
-    }
-    updateUndoRedoButtons();
-}
+    // 0. تهيئة الأدوات الأساسية أولاً
+    initializeAppSettings();
+    initializeTheme();
+    initializeNotifications();
+    initializeModals();
+    // initializeSpinner(); // لا حاجة لتهيئة خاصة
 
-function loadStateFromHistory(state) {
-    // Apply the state back to currentProject and UI
-    // This needs to be comprehensive
-    currentProject = JSON.parse(JSON.stringify(state)); // Deep clone back
-    
-    // Update UI elements based on the loaded state
-    projectTitleEditor.textContent = currentProject.name;
-    surahSelect.value = currentProject.surah;
-    // Repopulate ayahs based on surah and set start/end
-    populateAyahSelects(currentProject.surah).then(() => {
-        ayahStartSelect.value = currentProject.ayahStart;
-        updateAyahEndSelectRange(); // This will try to set endAyah correctly
-        ayahEndSelect.value = currentProject.ayahEnd;
-    });
-    reciterSelect.value = currentProject.reciter;
-    translationSelect.value = currentProject.translation;
-    
-    aspectRatioSelect.value = currentProject.video.aspectRatio;
-    videoFilterSelect.value = currentProject.video.filter;
-    fontSelect.value = currentProject.text.fontFamily;
-    fontSizeSlider.value = currentProject.text.fontSize;
-    fontSizeValueDisplay.textContent = `${currentProject.text.fontSize}px`;
-    fontColorPicker.value = currentProject.text.color;
-    ayahBgColorPicker.value = currentProject.text.ayahBgColor;
-    backgroundColorPicker.value = currentProject.background.type === 'color' ? currentProject.background.value : '#000000'; // Fallback for non-color
-    delayInput.value = currentProject.audio.delayBetweenAyahs;
+    // 1. تهيئة مديري واجهة المستخدم
+    initializePanelManager();
 
-    // Important: Refetch Quran data for the active ayahs if not storing them in history
-    if (currentProject.surah && currentProject.ayahStart && currentProject.ayahEnd) {
-        fetchQuranSegmentData(false); // Fetch but don't autoplay
-    } else {
-        updatePreviewForAyah(null); // Clear preview if no valid segment
-    }
-    updateStaticPreviewElements();
-}
+    // 2. تهيئة التعامل مع المشاريع
+    initializeProjectActions();
 
-function updateUndoRedoButtons() {
-    document.getElementById('undo-btn').disabled = currentHistoryIndex <= 0;
-    document.getElementById('redo-btn').disabled = currentHistoryIndex >= projectHistory.length - 1;
-}
+    // 3. تهيئة وحدات تحديد بيانات القرآن
+    initializeQuranSelectUI();
+    initializeQuranSpeechInput();
 
+    // 4. تهيئة وحدات الخلفية
+    initializeBackgroundImport();
+    initializeAIBackgroundSuggest();
 
-// --- API Fetching Functions ---
-async function fetchSurahMetadata() { /* ... (same as previous) ... */ }
-function populateReciterSelect() { /* ... (same as previous) ... */ }
-function populateTranslationSelect() { /* ... (same as previous) ... */ }
+    // 5. تهيئة وحدات النص وتأثيرات الفيديو
+    initializeTextStyleControls();
+    initializeVideoDimensionsControls();
+    initializeVideoFiltersControls();
 
-// --- Quran Data and Playback Logic ---
-async function fetchQuranSegmentData(autoPlay = false) { /* ... (same as previous, ensure show/hideSpinner) ... */ }
-function loadAndPlayAyah(indexInSegment, play = false) { /* ... (same as previous) ... */ }
+    // 6. تهيئة وحدات الصوت
+    initializeAudioDataLoader();
+    initializeMainAudioPlayback();
+    initializeTimelineControls();
+    initializeBackgroundMusic();
+    initializeAudioExtraction();
 
-function updatePreviewForAyah(ayahData) {
-    // ... (same as before, ensure it uses currentProject for styles) ...
-    updateStaticPreviewElements();
-}
+    // 7. تهيئة عناصر تحكم المحرر والإعدادات
+    initializeUndoRedo();
+    initializeExportOptionsUI();
 
-function updateStaticPreviewElements() {
-    // ... (same logic for bgBlurElement, videoPreviewContainer, canvas aspect ratio, filters) ...
-    // Make sure to use currentProject.background.value for image URLs
-    if (bgBlurElement) {
-        if (currentProject.background.type === 'color') {
-            bgBlurElement.style.backgroundImage = 'none';
-            bgBlurElement.style.backgroundColor = '#0A0A0A';
-            if (videoPreviewContainer) videoPreviewContainer.style.backgroundColor = currentProject.background.value;
-            ctx.fillStyle = currentProject.background.value;
-            const [w,h] = getCanvasDimensionsForPreview();
-            canvas.width = w; canvas.height = h;
-            ctx.fillRect(0,0,w,h);
-        } else if (currentProject.background.type === 'image' || currentProject.background.type === 'video_url') {
-            bgBlurElement.style.backgroundImage = `url(${currentProject.background.value_data_url || currentProject.background.value})`; // Prefer data_url if available
-            bgBlurElement.style.backgroundColor = 'transparent';
-            if(canvas && currentProject.background.type === 'image') {
-                const img = new Image();
-                img.onload = () => { /* ... (draw image to canvas logic from previous snippet) ... */ }
-                img.src = currentProject.background.value_data_url || currentProject.background.value;
-            } else if (videoPreviewContainer) {
-                // Handle video background preview (e.g., show first frame or placeholder)
-                videoPreviewContainer.style.backgroundImage = `url(${currentProject.background.value_data_url || currentProject.background.value})`; // Simple for now
-            }
-        }
-    }
-    if (videoPreviewContainer && currentProject.video.aspectRatio) {
-        videoPreviewContainer.style.aspectRatio = currentProject.video.aspectRatio.replace(':', ' / ');
-    }
-    if (videoPreviewContainer && currentProject.video.filter) {
-        videoPreviewContainer.style.filter = currentProject.video.filter;
-    }
-    // After all visual updates, render canvas for export (if needed immediately)
-    // renderCurrentFrameToCanvas(); // Call this to draw text etc. on canvas
-}
+    // 8. تهيئة معاينة الفيديو والتصدير
+    initializeCanvasPreview();
+    initializeVideoExport();
+    // initializeFFmpegExport();
 
-function getCanvasDimensionsForPreview() { /* ... (same as previous) ... */ }
-function getExportCanvasDimensions() {
-    const [w, h] = (currentProject.exportSettings.resolution || "1920x1080").split('x').map(Number);
-    return [w, h];
-}
-
-// --- UI Population and Event Handlers ---
-function populateSurahSelect() { /* ... (same as previous) ... */ }
-async function populateAyahSelects(surahNumber) { /* ... (same as previous) ... */ }
-function updateAyahEndSelectRange() { /* ... (same as previous) ... */ }
-
-function setupEventListeners() {
-    // ... (Theme, Screen Nav, Panel Controls, Project Title - same as previous) ...
-    // ... (Playback Controls, Timeline Slider - same as previous) ...
-
-    // Quran Panel Selects - Trigger update on confirm
-    const quranConfirmBtn = document.querySelector('#quran-selection-panel .confirm-panel-btn');
-    if (quranConfirmBtn) {
-        quranConfirmBtn.addEventListener('click', () => {
-            updateQuranSettingsFromPanelAndFetch(false); // Fetch but don't auto-play on confirm
-            saveStateToHistory();
-        });
-    }
-    // Individual selects should update currentProject immediately for live feedback if panel is open
-    // but actual fetch happens on confirm or play if no data.
-    [surahSelect, ayahStartSelect, ayahEndSelect, reciterSelect, translationSelect].forEach(el => {
-        if(el) el.addEventListener('change', updateCurrentProjectQuranSettings);
-    });
-
-
-    // Background Settings
-    if(importBackgroundInput) importBackgroundInput.addEventListener('change', handleBackgroundImport);
-    if(backgroundColorPicker) backgroundColorPicker.addEventListener('input', (e) => {
-        currentProject.background = { type: 'color', value: e.target.value };
-        updateStaticPreviewElements();
-        saveStateToHistory();
-    });
-
-    // Effects & Text Panel
-    if(aspectRatioSelect) aspectRatioSelect.addEventListener('change', (e) => { currentProject.video.aspectRatio = e.target.value; updateStaticPreviewElements(); saveStateToHistory(); });
-    if(videoFilterSelect) videoFilterSelect.addEventListener('change', (e) => { currentProject.video.filter = e.target.value; updateStaticPreviewElements(); saveStateToHistory(); });
-    if(fontSelect) fontSelect.addEventListener('change', (e) => { currentProject.text.fontFamily = e.target.value; updatePreviewForAyah(currentProject.ayahsData[currentProject.currentAyahIndexInSegment]); saveStateToHistory(); });
-    if(fontSizeSlider) fontSizeSlider.addEventListener('input', (e) => { /* ... update, call updatePreviewForAyah, saveStateToHistory() ... */ }); // Debounce this for performance
-    if(fontColorPicker) fontColorPicker.addEventListener('input', (e) => { currentProject.text.color = e.target.value; updatePreviewForAyah(currentProject.ayahsData[currentProject.currentAyahIndexInSegment]); saveStateToHistory(); });
-    if(ayahBgColorPicker) ayahBgColorPicker.addEventListener('input', (e) => { currentProject.text.ayahBgColor = e.target.value; updatePreviewForAyah(currentProject.ayahsData[currentProject.currentAyahIndexInSegment]); saveStateToHistory(); });
-    
-    // Audio Settings
-    if(delayInput) delayInput.addEventListener('change', (e) => { currentProject.audio.delayBetweenAyahs = parseFloat(e.target.value) || 0; saveStateToHistory(); });
-
-    // Export Settings
-    if(exportBtn) exportBtn.addEventListener('click', startExport);
-    if(resolutionSelect) resolutionSelect.addEventListener('change', (e) => currentProject.exportSettings.resolution = e.target.value);
-    if(videoFormatSelect) videoFormatSelect.addEventListener('change', (e) => currentProject.exportSettings.format = e.target.value);
-    if(framerateSelect) framerateSelect.addEventListener('change', (e) => currentProject.exportSettings.framerate = parseInt(e.target.value));
-
-    // Undo/Redo buttons
-    document.getElementById('undo-btn').addEventListener('click', undoState);
-    document.getElementById('redo-btn').addEventListener('click', redoState);
-
-    // Save Project (simple localStorage for now)
-    const saveProjectBtn = document.getElementById('save-project-btn-editor');
-    if(saveProjectBtn) saveProjectBtn.addEventListener('click', saveCurrentProjectToLocalStorage);
-
-    // Load projects on initial screen (placeholder)
-    document.getElementById('go-to-editor-btn').addEventListener('click', () => {
-        // ... (navigation logic) ...
-        const loadedProject = loadProjectFromLocalStorage('lastOpened'); // Example
-        if (loadedProject) {
-            loadProjectIntoEditor(loadedProject);
-        } else {
-            initializeNewProject();
-        }
-        openDefaultTabAndPanel();
-    });
-}
-
-function updateCurrentProjectQuranSettings() {
-    // Updates currentProject from Quran panel selects without fetching immediately
-    if (!currentProject || !surahSelect || !ayahStartSelect || !ayahEndSelect || !reciterSelect || !translationSelect) return;
-    currentProject.surah = parseInt(surahSelect.value);
-    currentProject.ayahStart = parseInt(ayahStartSelect.value);
-    currentProject.ayahEnd = parseInt(ayahEndSelect.value);
-    // Ensure start <= end
-    if (currentProject.ayahStart > currentProject.ayahEnd) {
-        ayahEndSelect.value = currentProject.ayahStart; // Auto-correct UI
-        currentProject.ayahEnd = currentProject.ayahStart;
-    }
-    currentProject.reciter = reciterSelect.value;
-    currentProject.translation = translationSelect.value;
-}
-
-
-function handleBackgroundImport(event) { /* ... (logic from previous snippet, ensure to set currentProject.background.value_data_url for file reader result) ... */ }
-
-function updateQuranSettingsFromPanelAndFetch(autoPlay = false) { /* ... (same, then call saveStateToHistory()) ... */ }
-
-function initializeNewProject() {
-    currentProject = {
-        id: `project-${Date.now()}`,
-        name: "مشروع جديد",
-        surah: quranMetaData.surahs.length > 0 ? quranMetaData.surahs[0].number : 1,
-        ayahStart: 1, ayahEnd: 1,
-        reciter: quranMetaData.reciters.length > 0 ? quranMetaData.reciters[0].id : "ar.alafasy",
-        translation: '',
-        background: { type: 'color', value: '#000000' }, // Default to black bg for card
-        text: {
-            fontFamily: "'Amiri Quran', serif", fontSize: 36, color: '#FFFFFF',
-            ayahBgColor: 'rgba(0,0,0,0.2)', effect: 'none'
-        },
-        video: { aspectRatio: '9:16', filter: 'none' }, // Default to portrait
-        audio: { delayBetweenAyahs: 1 },
-        exportSettings: { resolution: '1080x1920', format: 'webm', framerate: 25 },
-        currentAyahIndexInSegment: 0, ayahsData: [],
-    };
-    projectHistory = []; currentHistoryIndex = -1; // Reset history
-    loadProjectIntoUI(currentProject); // Apply to UI
-    fetchQuranSegmentData(false); // Fetch for initial selection
-    saveStateToHistory(); // Save initial state
-}
-
-function loadProjectIntoEditor(projectData) {
-    currentProject = JSON.parse(JSON.stringify(projectData)); // Deep clone
-    projectHistory = []; currentHistoryIndex = -1; // Reset history for loaded project
-    loadProjectIntoUI(currentProject);
-    if (currentProject.surah && currentProject.ayahStart && currentProject.ayahEnd) {
-        fetchQuranSegmentData(false);
-    } else {
-        updatePreviewForAyah(null);
-    }
-    saveStateToHistory(); // Save as first state for this loaded project
-}
-
-function loadProjectIntoUI(project) { // Helper to set all UI elements from project data
-    projectTitleEditor.textContent = project.name;
-    if (surahSelect && project.surah) {
-        surahSelect.value = project.surah;
-        populateAyahSelects(project.surah).then(() => {
-            if(ayahStartSelect) ayahStartSelect.value = project.ayahStart;
-            updateAyahEndSelectRange();
-            if(ayahEndSelect) ayahEndSelect.value = project.ayahEnd;
-        });
-    }
-    if (reciterSelect && project.reciter) reciterSelect.value = project.reciter;
-    if (translationSelect) translationSelect.value = project.translation;
-    
-    aspectRatioSelect.value = project.video.aspectRatio;
-    videoFilterSelect.value = project.video.filter;
-    fontSelect.value = project.text.fontFamily;
-    fontSizeSlider.value = project.text.fontSize;
-    fontSizeValueDisplay.textContent = `${project.text.fontSize}px`;
-    fontColorPicker.value = project.text.color;
-    ayahBgColorPicker.value = project.text.ayahBgColor;
-    backgroundColorPicker.value = project.background.type === 'color' ? project.background.value : '#000000';
-    delayInput.value = project.audio.delayBetweenAyahs;
-
-    // Export settings
-    resolutionSelect.value = project.exportSettings.resolution;
-    videoFormatSelect.value = project.exportSettings.format;
-    framerateSelect.value = project.exportSettings.framerate;
-
-    if(mainAudioPlayer) mainAudioPlayer.src = '';
-    if(timelineSlider) timelineSlider.value = 0;
-    // ... clear other preview elements
-    updateStaticPreviewElements(); // Update background, aspect ratio etc.
-}
-
-
-// --- Local Storage for Projects ---
-function saveCurrentProjectToLocalStorage() {
-    if (!currentProject || !currentProject.id) return;
+    // تحميل بيانات القرآن الثابتة (السور، القراء، الترجمات)
     try {
-        localStorage.setItem(currentProject.id, JSON.stringify(currentProject));
-        localStorage.setItem('lastOpened', currentProject.id); // Save ref to last opened
-        alert("تم حفظ المشروع بنجاح!");
-        // TODO: Update projects list on initial screen if visible or next time it's shown
-    } catch (e) {
-        console.error("Error saving project to localStorage:", e);
-        alert("خطأ في حفظ المشروع. قد تكون الذاكرة ممتلئة.");
-    }
-}
-function loadProjectFromLocalStorage(projectId) {
-    const projectString = localStorage.getItem(projectId);
-    if (projectString) {
-        return JSON.parse(projectString);
-    }
-    return null;
-}
-// TODO: Function to display all saved projects on initial screen
-
-
-// --- CCapture.js Export Logic ---
-function renderCurrentFrameToCanvas(targetCanvas, targetCtx, exportTime) {
-    // Get dimensions based on export or preview
-    const forExport = (targetCanvas !== canvas); // True if rendering to an offscreen canvas for export
-    const [targetWidth, targetHeight] = forExport ? getExportCanvasDimensions() : getCanvasDimensionsForPreview();
-
-    targetCanvas.width = targetWidth;
-    targetCanvas.height = targetHeight;
-
-    // 1. Draw Background (Color, Image, or Video Frame)
-    if (currentProject.background.type === 'color') {
-        targetCtx.fillStyle = currentProject.background.value;
-        targetCtx.fillRect(0, 0, targetWidth, targetHeight);
-    } else if (currentProject.background.type === 'image' && currentProject.background.value_data_url) {
-        const img = new Image();
-        img.src = currentProject.background.value_data_url;
-        // Ensure image is loaded before drawing (tricky in sync render loop)
-        // For CCapture, it's better if the image is already loaded and cached.
-        // This is a simplified draw:
-        try {
-            // Implement proper aspect ratio handling (cover/contain) for drawing
-            const imgAspectRatio = img.width / img.height;
-            const canvasAspectRatio = targetWidth / targetHeight;
-            let sx=0, sy=0, sWidth=img.width, sHeight=img.height;
-            if (imgAspectRatio > canvasAspectRatio) { // Image wider
-                sWidth = img.height * canvasAspectRatio;
-                sx = (img.width - sWidth) / 2;
-            } else { // Image taller
-                sHeight = img.width / canvasAspectRatio;
-                sy = (img.height - sHeight) / 2;
-            }
-            targetCtx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, targetWidth, targetHeight);
-        } catch (e) {
-            console.warn("Could not draw background image (may not be loaded yet for export frame):", e);
-            targetCtx.fillStyle = '#101010'; // Fallback
-            targetCtx.fillRect(0, 0, targetWidth, targetHeight);
-        }
-    } else { // Fallback or video (video frame drawing is more complex)
-        targetCtx.fillStyle = '#101010'; // Default dark background
-        targetCtx.fillRect(0, 0, targetWidth, targetHeight);
+        await withSpinner(async () => { // تغليف تحميل البيانات بالسبينر
+            const { surahs, reciters, translations } = await loadQuranStaticData();
+            populateSurahSelect(surahs);
+            populateReciterSelect(reciters);
+            populateTranslationSelect(translations);
+        });
+        // console.log("بيانات القرآن الثابتة (سور، قراء، ترجمات) تم تحميلها.");
+    } catch (error) {
+        handleError(error, "فشل تحميل بيانات القرآن الأساسية");
+        showNotification({ type: 'error', message: 'فشل تحميل بيانات القرآن. قد لا تعمل بعض الميزات بشكل صحيح.' });
     }
 
-    // Apply video filter if any (directly on canvas context if possible)
-    if (currentProject.video.filter !== 'none' && targetCtx.filter !== undefined) { // Check if context.filter is supported
-        targetCtx.filter = currentProject.video.filter;
+    // تحميل آخر مشروع تم العمل عليه أو إنشاء مشروع جديد إذا لم يوجد
+    const lastProjectId = getLastOpenedProjectId();
+    let projectToLoad = null;
+    if (lastProjectId) {
+        projectToLoad = getProjectById(lastProjectId);
+    }
+
+    if (projectToLoad && isValidProject(projectToLoad)) {
+        // console.log("تحميل آخر مشروع مفتوح:", projectToLoad.name);
+        setCurrentProject(projectToLoad); // هذا يضبط المشروع ويضيفه للتاريخ
+        // switchToEditorScreen(projectToLoad); // سيتم استدعاؤها لاحقًا إذا كانت الشاشة المناسبة
+        // updateUIFromProject(projectToLoad);
     } else {
-        targetCtx.filter = 'none'; // Reset if not applying or not supported
+        // إذا لم يكن هناك مشروع سابق صالح، ابدأ بمشروع جديد تمامًا
+        // console.log("لم يتم العثور على مشروع سابق صالح أو لا يوجد، إنشاء مشروع جديد.");
+        const newProj = createNewProject(); // أنشئ مشروعًا جديدًا ولكن لا تطلب اسمًا بعد
+        setCurrentProject(newProj); // هذا يضبط المشروع ويضيفه للتاريخ
+    }
+    
+    // الآن بعد تعيين المشروع (إما محمل أو جديد)، قم بتحديث الواجهة وانتقل للشاشة المناسبة
+    const current = getCurrentProject();
+    if (current) { // يجب أن يكون هناك مشروع دائمًا
+        // تحديد أي شاشة يجب عرضها
+        // إذا كان هناك مشروع محمل وكان المستخدم على شاشة المحرر آخر مرة (يمكن تخزين هذا كإعداد)
+        // أو ببساطة، إذا كان هناك مشروع محدد (غير الافتراضي تمامًا) انتقل للمحرر
+        // حاليًا، لنفترض أننا نبدأ دائمًا من الشاشة الرئيسية ما لم يتم توجيهنا بشكل آخر (مثل اختصار PWA)
+        
+        // إذا أردنا فتح المحرر مباشرة إذا كان هناك مشروع محمل:
+        // if (lastProjectId && projectToLoad) {
+        //     switchToEditorScreen(current);
+        // } else {
+        //     // البقاء على الشاشة الرئيسية (الافتراضي)
+        // }
+        updateUIFromProject(current); // تحديث الواجهة للمشروع الحالي
     }
 
+    // إعداد event listeners العامة للتطبيق
+    setupGlobalEventListeners();
 
-    // 2. Draw Ayah Text and Translation
-    const currentAyahData = currentProject.ayahsData[currentProject.currentAyahIndexInSegment];
-    if (currentAyahData) {
-        // Calculate positions and sizes based on targetCanvas dimensions
-        // This needs to be responsive to targetWidth/targetHeight
-
-        // Ayah Text
-        targetCtx.fillStyle = currentProject.text.ayahBgColor; // Ayah Background
-        const ayahFontSize = currentProject.text.fontSize * (forExport ? (targetHeight / 720) : (targetHeight / videoPreviewContainer.clientHeight)) ; // Scale font size
-        
-        targetCtx.font = `${ayahFontSize}px ${currentProject.text.fontFamily}`;
-        targetCtx.textAlign = 'center';
-        targetCtx.textBaseline = 'middle';
-
-        // Simple text wrapping (basic)
-        const ayahLines = wrapText(targetCtx, currentAyahData.text, targetWidth * 0.85, ayahFontSize);
-        const totalAyahTextHeight = ayahLines.length * ayahFontSize * 1.3; // Approx line height
-        
-        // Ayah background rectangle (centered)
-        const ayahBgWidth = targetWidth * 0.9;
-        const ayahBgHeight = totalAyahTextHeight + ayahFontSize * 0.6; // Padding
-        const ayahBgX = (targetWidth - ayahBgWidth) / 2;
-        const ayahBgY = (targetHeight / 2) - (ayahBgHeight / 2) - (currentAyahData.translationText ? ayahFontSize * 1.5 : 0) ; // Shift up if translation
-        
-        if (tinycolor(currentProject.text.ayahBgColor).getAlpha() > 0) {
-             roundRect(targetCtx, ayahBgX, ayahBgY, ayahBgWidth, ayahBgHeight, 8 * (targetWidth/1000) , true, false);
-        }
-
-        targetCtx.fillStyle = currentProject.text.color; // Ayah Text Color
-        ayahLines.forEach((line, index) => {
-            targetCtx.fillText(line, targetWidth / 2, ayahBgY + (ayahFontSize*0.8) + (index * ayahFontSize * 1.3));
-        });
-
-
-        // Translation Text (if exists)
-        if (currentAyahData.translationText) {
-            const transFontSize = Math.max(12, ayahFontSize * 0.45);
-            targetCtx.font = `${transFontSize}px ${getComputedStyle(document.body).getPropertyValue('--font-family-ui')}`;
-            const transLines = wrapText(targetCtx, currentAyahData.translationText, targetWidth * 0.8, transFontSize);
-            const transYStart = ayahBgY + ayahBgHeight + transFontSize * 0.5; // Below ayah text
-
-            // Optional: translation background
-            // targetCtx.fillStyle = "rgba(0,0,0,0.1)";
-            // roundRect(targetCtx, ayahBgX + 20, transYStart - transFontSize*0.4, ayahBgWidth - 40, transLines.length * transFontSize * 1.3 + transFontSize*0.4, 5, true, false);
-            
-            targetCtx.fillStyle = tinycolor(currentProject.text.color).isDark() ? '#E0E0E0' : '#DDDDDD'; // Slightly less prominent than ayah
-            transLines.forEach((line, index) => {
-                targetCtx.fillText(line, targetWidth / 2, transYStart + (transFontSize * 0.5) + (index * transFontSize * 1.3));
-            });
-        }
+    // إخفاء شاشة التحميل الأولية إذا كانت موجودة
+    const initialLoadingScreen = getElement('app-initial-loading');
+    if (initialLoadingScreen) {
+        initialLoadingScreen.style.display = 'none';
     }
 
-    // 3. Draw Surah Title (Optional, if desired in export)
-    const selectedSurahData = quranMetaData.surahs.find(s => s.number === currentProject.surah);
-    if (selectedSurahData) {
-        const titleFontSize = Math.max(18, ayahFontSize * 0.7);
-        targetCtx.font = `bold ${titleFontSize}px ${getComputedStyle(document.body).getPropertyValue('--font-family-ui')}`;
-        targetCtx.fillStyle = currentProject.text.color; // Or a specific title color
-        targetCtx.textAlign = 'center';
-        targetCtx.fillText(`سورة ${selectedSurahData.name}`, targetWidth / 2, targetHeight * 0.15); // Adjust Y position
-    }
-
-    // Reset filter for next frame if it was applied to context
-    if (targetCtx.filter !== 'none') targetCtx.filter = 'none';
+    eventBus.emit('appInitialized');
+    console.log("تم تهيئة التطبيق بنجاح!");
 }
 
-// Helper for text wrapping
-function wrapText(context, text, maxWidth, fontSize) {
-    const words = text.split(' ');
-    const lines = [];
-    let currentLine = words[0];
-    context.font = `${fontSize}px ${currentProject.text.fontFamily}`; // Ensure font is set for measureText
-
-    for (let i = 1; i < words.length; i++) {
-        const word = words[i];
-        const width = context.measureText(currentLine + " " + word).width;
-        if (width < maxWidth) {
-            currentLine += " " + word;
-        } else {
-            lines.push(currentLine);
-            currentLine = word;
-        }
-    }
-    lines.push(currentLine);
-    return lines;
-}
-
-// Helper for rounded rectangle
-function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
-  if (typeof stroke === 'undefined') { stroke = true; }
-  if (typeof radius === 'undefined') { radius = 5; }
-  if (typeof radius === 'number') {
-    radius = {tl: radius, tr: radius, br: radius, bl: radius};
-  } else {
-    var defaultRadius = {tl: 0, tr: 0, br: 0, bl: 0};
-    for (var side in defaultRadius) {
-      radius[side] = radius[side] || defaultRadius[side];
-    }
-  }
-  ctx.beginPath();
-  ctx.moveTo(x + radius.tl, y);
-  ctx.lineTo(x + width - radius.tr, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
-  ctx.lineTo(x + width, y + height - radius.br);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
-  ctx.lineTo(x + radius.bl, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
-  ctx.lineTo(x, y + radius.tl);
-  ctx.quadraticCurveTo(x, y, x + radius.tl, y);
-  ctx.closePath();
-  if (fill) { ctx.fill(); }
-  if (stroke) { ctx.stroke(); }
-}
-
-
-async function startExport() { /* ... (CCapture.js setup and loop - this needs careful implementation) ... */
-    showSpinner();
-    exportProgressContainer.style.display = 'block';
-    exportProgressBar.value = 0;
-    exportProgressText.textContent = "0%";
-
-    const format = currentProject.exportSettings.format || 'webm';
-    const framerate = currentProject.exportSettings.framerate || 25;
-    const [exportWidth, exportHeight] = getExportCanvasDimensions();
-
-    // Create an offscreen canvas for rendering export frames
-    const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = exportWidth;
-    exportCanvas.height = exportHeight;
-    const exportCtx = exportCanvas.getContext('2d');
-
-    capturer = new CCapture({
-        format: format === 'gif' ? 'gif' : 'webm', // CCapture supports webm, gif, png, jpg
-        workersPath: format === 'gif' ? 'https://cdn.jsdelivr.net/npm/ccapture.js@1.1.0/src/' : undefined, // Required for GIF
-        framerate: framerate,
-        verbose: false,
-        name: currentProject.name.replace(/\s+/g, '_') || "quran_video",
-        quality: 90, // For webm/jpg
-        // motionBlurFrames: format === 'webm' ? Math.floor(framerate / 10) : 0, // Optional motion blur for webm
-    });
-
-    capturer.start();
-
-    // Determine total duration - this is complex if ayahs have different audio lengths
-    // For now, assume each ayah contributes its audio duration + delay
-    let totalEstimatedDuration = 0;
-    for (const ayah of currentProject.ayahsData) {
-        // This needs the actual audio duration for each ayah.
-        // For simplicity, let's use a placeholder or average.
-        // A better way: pre-load all audio durations.
-        const audio = new Audio(ayah.audio);
-        await new Promise(resolve => { // Wait for duration to be available
-            audio.onloadedmetadata = () => {
-                totalEstimatedDuration += audio.duration;
-                resolve();
-            };
-            audio.onerror = () => {
-                totalEstimatedDuration += 3; // Fallback if audio fails to load
-                resolve();
-            }
-        });
-        totalEstimatedDuration += currentProject.audio.delayBetweenAyahs;
-    }
-    if (currentProject.ayahsData.length === 0) {
-        alert("لا توجد آيات لتصديرها!");
-        hideSpinner();
-        exportProgressContainer.style.display = 'none';
+/**
+ * تحديث جميع أجزاء واجهة المستخدم لتعكس حالة المشروع الحالية.
+ * @param {object} project - كائن المشروع الحالي.
+ */
+export function updateUIFromProject(project) {
+    if (!project) {
+        console.warn("محاولة تحديث واجهة المستخدم بدون مشروع.");
         return;
     }
+    // console.log("تحديث واجهة المستخدم للمشروع:", project.name, project);
 
-
-    let elapsedExportTime = 0;
-    const timeStep = 1 / framerate;
-    let currentAyahExportIndex = 0;
-    let timeInCurrentAyah = 0;
-    let currentAyahAudioDuration = 0; // Needs to be fetched
-
-    // Function to get current ayah's audio duration
-    async function getAyahDuration(index) {
-        if (index >= currentProject.ayahsData.length) return 0;
-        const audioSrc = currentProject.ayahsData[index].audio;
-        try {
-            const audio = new Audio(audioSrc);
-            return await new Promise((resolve, reject) => {
-                audio.onloadedmetadata = () => resolve(audio.duration);
-                audio.onerror = () => reject(new Error("Failed to load audio for duration"));
-            });
-        } catch (e) { return 3; /* fallback */ }
+    const projectTitleEditor = getElement('current-project-title-editor');
+    if (projectTitleEditor) {
+        projectTitleEditor.textContent = project.name;
     }
-    currentAyahAudioDuration = await getAyahDuration(currentAyahExportIndex);
+
+    updateQuranSelectUIFromProject(project);
+    updateBackgroundUIFromProject(project);
+    updateAIBackgroundSelectionUI(project);
+    updateTextStyleControlsUI(project);
+    updateVideoDimensionsUI(project);
+    updateVideoFiltersUI(project);
+    applyVideoFilterToCanvasEl(project.videoFilter); // تأكد من تطبيق الفلتر
+
+    // تحديثات الصوت
+    // updateAudioPlayerTimelineUI(project.timelinePosition || 0, project.totalDuration || 0); // يتم تحديثه بواسطة mainAudioPlayback
+    refreshAudioPlayerForProject(project); // هذا سيعيد تحميل الآية الحالية إذا لزم الأمر
+    updateBackgroundMusicUI(project);
+    // تأكد من مزامنة موسيقى الخلفية مع حالة التشغيل الحالية
+    syncBackgroundMusicToMainPlayback(getIsAudioPlaying());
 
 
-    function animationLoop() {
-        if (elapsedExportTime >= totalEstimatedDuration) {
-            capturer.stop();
-            capturer.save();
-            hideSpinner();
-            exportProgressContainer.style.display = 'none';
-            alert("تم الانتهاء من التصدير!");
-            return;
+    updateExportOptionsUIFromProject(project); // إذا كانت الإعدادات تعتمد على المشروع
+
+    // إعادة حساب المدد وتحديث شريط الزمن
+    if (project.selectedAyahs && project.selectedAyahs.length > 0) {
+        const oldTotalDuration = project.totalDuration;
+        calculateAyahStartTimesAndTotalDuration(project);
+        if (oldTotalDuration !== project.totalDuration || project.totalDuration === 0) { // تحديث إذا تغيرت المدة أو كانت صفرًا
+            updateTotalDurationDisplay(project.totalDuration); // من timeline-control
         }
+    } else { // لا توجد آيات، اضبط المدة على صفر
+        project.totalDuration = 0;
+        updateTotalDurationDisplay(0);
+    }
+    // تحديث الوقت الحالي على شريط الزمن أيضًا
+    updateCurrentTimeDisplay(project.timelinePosition || 0);
 
-        // Update which Ayah is "active" for rendering based on elapsedExportTime
-        if (timeInCurrentAyah >= (currentAyahAudioDuration + currentProject.audio.delayBetweenAyahs)) {
-            currentAyahExportIndex++;
-            if (currentAyahExportIndex >= currentProject.ayahsData.length) {
-                // End of ayahs, stop capture.
-                elapsedExportTime = totalEstimatedDuration; // Force end
-                animationLoop(); // Call to stop and save
-                return;
+
+    updateCanvasDimensions(project.aspectRatio); // هذا سيستدعي updatePreview بدوره
+
+    eventBus.emit('uiUpdatedForProject', project);
+}
+
+
+function setupGlobalEventListeners() {
+    const projectTitleEditor = getElement('current-project-title-editor');
+    if (projectTitleEditor) {
+        projectTitleEditor.addEventListener('click', () => { // تعديل عند النقر بدلًا من focus
+            if (projectTitleEditor.contentEditable !== "true") {
+                projectTitleEditor.contentEditable = "true";
+                // تحديد النص بالكامل لتسهيل التعديل
+                const range = document.createRange();
+                range.selectNodeContents(projectTitleEditor);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
             }
-            timeInCurrentAyah = 0;
-            // Asynchronously get next duration without blocking loop too much
-            getAyahDuration(currentAyahExportIndex).then(d => currentAyahAudioDuration = d);
+        });
+        projectTitleEditor.addEventListener('blur', () => {
+            projectTitleEditor.contentEditable = "false";
+            const newName = projectTitleEditor.textContent.trim();
+            const project = getCurrentProject();
+            if (newName && project.name !== newName) {
+                project.name = newName;
+                touchProject(project);
+                setCurrentProject(project, false);
+                saveState(`اسم المشروع تغير إلى: ${newName}`);
+                saveCurrentProject();
+                showNotification({type: 'success', message: `تم تغيير اسم المشروع إلى "${newName}"`, duration: 2000});
+                 refreshProjectsListView(); // تحديث قائمة المشاريع أيضًا
+            } else if (!newName && project.name) { // إذا أصبح الاسم فارغًا
+                projectTitleEditor.textContent = project.name; // أعد الاسم القديم
+                showNotification({type: 'warning', message: `اسم المشروع لا يمكن أن يكون فارغًا.`, duration: 2500});
+            } else { // لم يتغير أو كان فارغًا وبقي فارغًا
+                 projectTitleEditor.textContent = project.name; // تأكد من عرض الاسم الصحيح
+            }
+        });
+        projectTitleEditor.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                projectTitleEditor.blur();
+            }
+        });
+    }
+
+    window.addEventListener('resize', debounce(() => {
+        if (getElement('editor-screen').classList.contains('active-screen')) {
+            const project = getCurrentProject();
+            if (project) {
+                updateCanvasDimensions(project.aspectRatio);
+            }
         }
-        // Set the global currentAyahIndexInSegment for renderCurrentFrameToCanvas
-        currentProject.currentAyahIndexInSegment = currentAyahExportIndex;
+    }, 250));
 
-
-        renderCurrentFrameToCanvas(exportCanvas, exportCtx, elapsedExportTime);
-        capturer.capture(exportCanvas);
-
-        const progress = (elapsedExportTime / totalEstimatedDuration) * 100;
-        exportProgressBar.value = progress;
-        exportProgressText.textContent = `${Math.round(progress)}%`;
-
-        elapsedExportTime += timeStep;
-        timeInCurrentAyah += timeStep;
-
-        requestAnimationFrame(animationLoop);
+    const editorScreenEl = getElement('editor-screen');
+    if (editorScreenEl) {
+        const editorScreenObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.target.id === 'editor-screen') {
+                    if (entry.isIntersecting && entry.target.classList.contains('active-screen')) {
+                        startPreviewRenderLoop();
+                    } else {
+                        stopPreviewRenderLoop();
+                    }
+                }
+            });
+        }, { threshold: 0.1 });
+        editorScreenObserver.observe(editorScreenEl);
     }
+    
+    // مستمعات Event Bus
+    eventBus.on('quranSelectionChanged', (project) => updateUIFromProject(project));
+    eventBus.on('backgroundChanged', (project) => {
+        clearBackgroundElementsCache();
+        updateAIBackgroundSelectionUI(project);
+        updatePreview(); // تحديث المعاينة مباشرة
+    });
+    eventBus.on('textStyleChanged', (project) => updatePreview());
+    eventBus.on('videoDimensionsChanged', (project) => updateCanvasDimensions(project.aspectRatio));
+    eventBus.on('videoFilterChanged', (project) => {
+        applyVideoFilterToCanvasEl(project.videoFilter);
+        updatePreview();
+    });
+    
+    eventBus.on('panelOpened', (panelId) => {
+        if (panelId === 'background-settings-panel') {
+            const suggestionsContainer = getElement('ai-bg-suggestions');
+            // تحقق مما إذا كان فارغًا وما إذا كان زر AI مفعلاً (يعني أن المفتاح موجود)
+            if (suggestionsContainer && suggestionsContainer.children.length === 0 && !getElement('apply-ai-bg').disabled) {
+                 // لا تقم بالنقر التلقائي، دع المستخدم يقرر
+                 // getElement('apply-ai-bg').click();
+            }
+        }
+    });
 
-    requestAnimationFrame(animationLoop);
+    eventBus.on('projectStateRestoredByUndo', updateUIFromProject);
+    eventBus.on('projectStateRestoredByRedo', updateUIFromProject);
+    eventBus.on('projectSaved', (project) => refreshProjectsListView());
+    eventBus.on('projectSet', (project) => { // عند استدعاء setCurrentProject
+         updateUIFromProject(project); // تأكد من تحديث الواجهة بالكامل
+    });
 }
 
 
-// --- Initialization and App Start ---
-function openControlPanel(panelId) { /* ... (same as previous) ... */ }
-function closeControlPanel(panelId) { /* ... (same as previous) ... */ }
-function closeAllControlPanels(exceptPanelId = null) { /* ... (same as previous) ... */ }
-function openDefaultTabAndPanel() { /* ... (same as previous) ... */ }
-function loadTheme() { /* ... (same as previous, ensure dark is default if no localStorage item) ... */ }
-
-async function init() {
-    loadTheme();
-    populateReciterSelect();
-    populateTranslationSelect();
-    await fetchSurahMetadata();
-    setupEventListeners();
-
-    const lastOpenedProjectId = localStorage.getItem('lastOpened');
-    let projectToLoad = null;
-    if (lastOpenedProjectId) {
-        projectToLoad = loadProjectFromLocalStorage(lastOpenedProjectId);
-    }
-
-    if (document.getElementById('editor-screen').classList.contains('active-screen')) {
-        if (projectToLoad) loadProjectIntoEditor(projectToLoad); else initializeNewProject();
-        openDefaultTabAndPanel();
-    } else if (document.getElementById('initial-screen').classList.contains('active-screen')) {
-        // TODO: displayProjectsList();
-    }
+// --- نقطة انطلاق التطبيق ---
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onAppReady);
+} else {
+    onAppReady(); // DOMContentLoaded has already fired
 }
-
-document.addEventListener('DOMContentLoaded', init);
