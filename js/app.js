@@ -1,3 +1,9 @@
+// js/app.js (نسخة مبسطة للتشخيص - مع alert)
+alert("APP.JS LOADED AND EXECUTING!"); // <--- هذا هو السطر الجديد والمهم
+
+import { getElement } from './core/dom-loader.js';
+import { initializeTheme, toggleTheme } from './ui/theme-handler.js';
+// ... باقي الكود المبسّط ...
 // js/app.js - نقطة الانطلاق الرئيسية (نسخة معدلة للتشخيص والحل الجذري)
 
 // --- الاستيرادات الأساسية جدًا للبدء ---
