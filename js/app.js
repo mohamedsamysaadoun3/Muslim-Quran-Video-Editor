@@ -1,208 +1,155 @@
-// js/app.js (نسخة مبسطة للتشخيص - مع alert)
-alert("APP.JS LOADED AND EXECUTING!"); // <--- هذا هو السطر الجديد والمهم
+// js/app.js - نقطة الانطلاق الرئيسية (مُركّز ومُفحوص)
+// الهدف: تشغيل زر "إنشاء فيديو جديد" والانتقال بين الشاشات، وتشغيل تبديل الثيم.
 
 import { getElement } from './core/dom-loader.js';
 import { initializeTheme, toggleTheme } from './ui/theme-handler.js';
-// ... باقي الكود المبسّط ...
-// js/app.js - نقطة الانطلاق الرئيسية (نسخة معدلة للتشخيص والحل الجذري)
 
-// --- الاستيرادات الأساسية جدًا للبدء ---
-import { getElement } from './core/dom-loader.js';
-import { initializeTheme, toggleTheme } from './ui/theme-handler.js';
-// سنقوم باستيراد الوحدات الأخرى تدريجيًا عندما نتأكد أن الأساس يعمل
-
-// --- تعريف العناصر الأساسية للواجهة ---
-let initialScreen = null;
-let editorScreen = null;
-let goToEditorBtn = null;
-let backToInitialScreenBtn = null;
-let themeToggleInitialBtn = null;
-let themeToggleEditorBtn = null;
-// المزيد من العناصر سيتم تعريفها عند الحاجة
+// --- متغيرات عامة لعناصر DOM الرئيسية ---
+let initialScreenEl = null;
+let editorScreenEl = null;
+let goToEditorBtnEl = null;
+let backToInitialScreenBtnEl = null;
+let themeToggleInitialBtnEl = null;
+let themeToggleEditorBtnEl = null; // زر الثيم في شاشة المحرر
 
 /**
- * دالة لتهيئة عناصر DOM الرئيسية.
- * يتم استدعاؤها بعد تحميل DOM.
+ * جلب وتخزين مراجع عناصر DOM الرئيسية.
+ * يُستدعى مرة واحدة بعد تحميل DOM.
  */
 function cacheDOMElements() {
-    console.log("APP: cacheDOMElements - بدء جلب عناصر DOM...");
-    initialScreen = getElement('initial-screen');
-    editorScreen = getElement('editor-screen');
-    goToEditorBtn = getElement('go-to-editor-btn');
-    backToInitialScreenBtn = getElement('back-to-initial-screen-btn');
-    themeToggleInitialBtn = getElement('theme-toggle-initial');
-    themeToggleEditorBtn = getElement('theme-toggle-editor');
+    console.log("APP.JS: Caching DOM elements...");
+    initialScreenEl = getElement('initial-screen');
+    editorScreenEl = getElement('editor-screen');
+    goToEditorBtnEl = getElement('go-to-editor-btn');
+    backToInitialScreenBtnEl = getElement('back-to-initial-screen-btn');
+    themeToggleInitialBtnEl = getElement('theme-toggle-initial');
+    themeToggleEditorBtnEl = getElement('theme-toggle-editor');
 
-    // التحقق من وجود العناصر الأساسية
-    if (!initialScreen) console.error("APP: cacheDOMElements - خطأ فادح: initialScreen غير موجود!");
-    if (!editorScreen) console.error("APP: cacheDOMElements - خطأ فادح: editorScreen غير موجود!");
-    if (!goToEditorBtn) console.error("APP: cacheDOMElements - خطأ فادح: goToEditorBtn غير موجود!");
-    // backToInitialScreenBtn و themeToggleEditorBtn قد لا يكونا بنفس الأهمية في البداية
-    if (!backToInitialScreenBtn) console.warn("APP: cacheDOMElements - تنبيه: backToInitialScreenBtn غير موجود.");
-    if (!themeToggleInitialBtn) console.error("APP: cacheDOMElements - خطأ: themeToggleInitialBtn غير موجود!");
-
-    console.log("APP: cacheDOMElements - اكتمل جلب عناصر DOM.");
+    // تحقق بسيط من وجود العناصر الأساسية جدًا
+    if (!initialScreenEl || !editorScreenEl || !goToEditorBtnEl) {
+        console.error("APP.JS: خطأ فادح! واحد أو أكثر من عناصر الشاشة الرئيسية أو زر الإنشاء مفقود.");
+        alert("خطأ في تهيئة التطبيق. بعض العناصر الأساسية مفقودة. يرجى التحقق من الـ Console.");
+    }
+    console.log("APP.JS: DOM elements cached.");
 }
 
-
 /**
- * دالة للانتقال إلى شاشة المحرر
+ * التبديل إلى شاشة المحرر.
  */
 function switchToEditorScreen() {
-    if (initialScreen && editorScreen) {
-        initialScreen.classList.remove('active-screen');
-        initialScreen.style.display = 'none';
+    if (initialScreenEl && editorScreenEl) {
+        initialScreenEl.classList.remove('active-screen');
+        initialScreenEl.style.display = 'none';
 
-        editorScreen.classList.add('active-screen');
-        editorScreen.style.display = 'flex'; // أو 'block' حسب CSS
-        console.log("APP: تم التبديل إلى شاشة المحرر.");
-        // هنا لاحقًا سنضيف: updateUIFromProject(getCurrentProject());
-        // وهنا لاحقًا سنضيف: openPanel('quran-selection-panel');
+        editorScreenEl.classList.add('active-screen');
+        editorScreenEl.style.display = 'flex'; // أو 'block' حسب CSS لشاشة المحرر
+        console.log("APP.JS: Switched to Editor Screen.");
+
+        // لاحقًا، هنا سنستدعي updateUIFromProject(currentProject) و openPanel()
     } else {
-        console.error("APP: switchToEditorScreen - خطأ: الشاشة الأولية أو شاشة المحرر غير معرفة!");
+        console.error("APP.JS: Cannot switch to editor screen, screen elements not found.");
     }
 }
 
 /**
- * دالة للانتقال إلى الشاشة الأولية
+ * التبديل إلى الشاشة الأولية.
  */
 function switchToInitialScreen() {
-    if (initialScreen && editorScreen) {
-        editorScreen.classList.remove('active-screen');
-        editorScreen.style.display = 'none';
+    if (initialScreenEl && editorScreenEl) {
+        editorScreenEl.classList.remove('active-screen');
+        editorScreenEl.style.display = 'none';
 
-        initialScreen.classList.add('active-screen');
-        initialScreen.style.display = 'flex';
-        console.log("APP: تم التبديل إلى الشاشة الأولية.");
-        // هنا لاحقًا سنضيف: refreshProjectsListView();
-        // وهنا لاحقًا سنضيف: closeAllPanels();
+        initialScreenEl.classList.add('active-screen');
+        initialScreenEl.style.display = 'flex';
+        console.log("APP.JS: Switched to Initial Screen.");
+        // لاحقًا: refreshProjectsListView(); closeAllPanels();
     } else {
-        console.error("APP: switchToInitialScreen - خطأ: الشاشة الأولية أو شاشة المحرر غير معرفة!");
+        console.error("APP.JS: Cannot switch to initial screen, screen elements not found.");
     }
 }
 
 /**
- * دالة تهيئة مستمعي الأحداث الأساسية.
+ * تهيئة مستمعي الأحداث للأزرار الرئيسية.
  */
-function initializeCoreEventListeners() {
-    console.log("APP: initializeCoreEventListeners - بدء تهيئة مستمعي الأحداث...");
+function initializeEventListeners() {
+    console.log("APP.JS: Initializing event listeners...");
 
-    if (themeToggleInitialBtn) {
-        themeToggleInitialBtn.addEventListener('click', () => {
-            console.log("APP: زر تبديل الثيم (الأولي) تم النقر عليه.");
-            try {
-                toggleTheme();
-            } catch (e) {
-                console.error("APP: خطأ عند تبديل الثيم:", e);
-            }
+    if (goToEditorBtnEl) {
+        goToEditorBtnEl.addEventListener('click', () => {
+            console.log("APP.JS: 'Create New Video' button clicked.");
+            // الخطوة التالية: استدعاء دالة لإنشاء مشروع جديد فعليًا
+            // مثل: import { createAndEditNewProject } from './features/project/project-actions.js';
+            //       createAndEditNewProject();
+            // حاليًا، فقط التبديل:
+            switchToEditorScreen();
         });
-        console.log("APP: تم ربط مستمع لزر 'theme-toggle-initial'.");
+        console.log("APP.JS: Event listener attached to 'go-to-editor-btn'.");
+    } else {
+        // تم التحقق منه في cacheDOMElements
     }
 
-    // زر تبديل الثيم في شاشة المحرر (إذا وجد)
-    if (themeToggleEditorBtn) {
-         themeToggleEditorBtn.addEventListener('click', () => {
-            console.log("APP: زر تبديل الثيم (المحرر) تم النقر عليه.");
-            try {
-                toggleTheme();
-            } catch (e) {
-                console.error("APP: خطأ عند تبديل الثيم من المحرر:", e);
-            }
-        });
-        console.log("APP: تم ربط مستمع لزر 'theme-toggle-editor'.");
-    }
-
-
-    if (goToEditorBtn) {
-        goToEditorBtn.addEventListener('click', () => {
-            console.log("APP: زر 'إنشاء فيديو جديد' تم النقر عليه.");
-            // --- هذا هو المكان الذي سنضيف فيه منطق إنشاء المشروع لاحقًا ---
-            // حاليًا، سنقوم بالتبديل مباشرة
-            // 1. لاحقًا: استدعاء دالة من project-actions.js مثل handleCreateNewProjectClick()
-            // 2. هذه الدالة ستقوم بـ:
-            //    - عرض showPrompt لاسم المشروع
-            //    - إنشاء كائن مشروع جديد
-            //    - setCurrentProject(newProject)
-            //    - saveProjectToStorage(newProject)
-            //    - refreshProjectsListView()
-            //    - switchToEditorScreen() // هذه الدالة ستقوم بتحديث الواجهة وفتح اللوحة
-            
-            // للتشخيص الآن، فقط التبديل:
-            switchToEditorScreen(); 
-            // لاحقًا، بعد أن يعمل هذا، سنضيف استدعاء لـ updateUIFromProject و openPanel
-            // داخل switchToEditorScreen أو بعدها مباشرة.
-        });
-        console.log("APP: تم ربط مستمع لزر 'go-to-editor-btn'.");
-    }
-
-    if (backToInitialScreenBtn) {
-        backToInitialScreenBtn.addEventListener('click', () => {
-            console.log("APP: زر 'العودة' تم النقر عليه.");
-            // لاحقًا: إضافة منطق سؤال الحفظ
+    if (backToInitialScreenBtnEl) {
+        backToInitialScreenBtnEl.addEventListener('click', () => {
+            console.log("APP.JS: 'Back' button clicked.");
+            // لاحقًا: سؤال الحفظ
             switchToInitialScreen();
         });
-        console.log("APP: تم ربط مستمع لزر 'back-to-initial-screen-btn'.");
+        console.log("APP.JS: Event listener attached to 'back-to-initial-screen-btn'.");
     }
-    console.log("APP: initializeCoreEventListeners - اكتملت تهيئة مستمعي الأحداث.");
-}
 
+    if (themeToggleInitialBtnEl) {
+        themeToggleInitialBtnEl.addEventListener('click', () => {
+            console.log("APP.JS: Theme toggle (initial) clicked.");
+            toggleTheme();
+        });
+        console.log("APP.JS: Event listener attached to 'theme-toggle-initial'.");
+    }
+
+    if (themeToggleEditorBtnEl) {
+        themeToggleEditorBtnEl.addEventListener('click', () => {
+            console.log("APP.JS: Theme toggle (editor) clicked.");
+            toggleTheme();
+        });
+        console.log("APP.JS: Event listener attached to 'theme-toggle-editor'.");
+    }
+    console.log("APP.JS: Event listeners initialized.");
+}
 
 /**
  * الدالة الرئيسية لتهيئة التطبيق.
  */
-async function mainAppInitializer() {
-    console.log("APP: mainAppInitializer - بدء تهيئة التطبيق...");
+function initializeApp() {
+    console.log("APP.JS: Initializing App...");
 
-    // 0. جلب عناصر DOM أولاً وقبل كل شيء
-    cacheDOMElements();
+    cacheDOMElements(); // جلب عناصر DOM أولاً
 
-    // 1. تهيئة الثيم (يعتمد على body و localStorage فقط)
     try {
-        initializeTheme(); // هذه الدالة يجب أن تطبق الثيم المحفوظ أو الافتراضي
-        console.log("APP: mainAppInitializer - تم تهيئة الثيم.");
+        initializeTheme(); // تهيئة وتطبيق الثيم
     } catch (e) {
-        console.error("APP: mainAppInitializer - خطأ فادح أثناء تهيئة الثيم:", e);
-        alert("حدث خطأ أثناء تحميل إعدادات المظهر. قد لا يعمل التطبيق بشكل صحيح.");
-        // قد يكون من المناسب إيقاف باقي التهيئة هنا إذا كان الثيم ضروريًا جدًا
+        console.error("APP.JS: Error during theme initialization:", e);
+    }
+    
+    initializeEventListeners(); // ربط الأحداث بالأزرار الموجودة
+
+    // تأكد من أن الشاشة الأولية هي المعروضة بشكل صحيح
+    if (initialScreenEl && editorScreenEl) {
+        if (!initialScreenEl.classList.contains('active-screen')) {
+            initialScreenEl.classList.add('active-screen');
+        }
+        initialScreenEl.style.display = 'flex'; // تأكد من أنها مرئية
+        
+        editorScreenEl.classList.remove('active-screen');
+        editorScreenEl.style.display = 'none'; // تأكد من أنها مخفية
     }
 
-    // 2. تهيئة مستمعي الأحداث الأساسية (للأزرار الموجودة في HTML مباشرة)
-    initializeCoreEventListeners();
-    
-    // 3. تأكد من أن الشاشة الأولية هي المعروضة في البداية
-    // هذا تم نقله إلى initializeCoreEventListeners لضمان حدوثه بعد cacheDOMElements
-    // ولكن يمكن التأكيد عليه هنا أيضًا
-    if (initialScreen && editorScreen) {
-        initialScreen.style.display = 'flex';
-        initialScreen.classList.add('active-screen');
-        editorScreen.style.display = 'none';
-        editorScreen.classList.remove('active-screen');
-    } else {
-        console.error("APP: mainAppInitializer - لا يمكن ضبط الشاشات الأولية لأن العناصر غير موجودة!");
-    }
-
-
-    // --- هنا سنبدأ بإضافة تهيئة الوحدات الأخرى تدريجيًا ---
-    // مثال:
-    // console.log("APP: mainAppInitializer - تهيئة PanelManager...");
-    // try {
-    //     initializePanelManager(); // افترض أن هذا الملف موجود وسليم
-    // } catch (e) { console.error("APP: خطأ في تهيئة PanelManager:", e); }
-
-    // console.log("APP: mainAppInitializer - تهيئة ProjectActions (بدون استدعاء تحميل البيانات بعد)...");
-    // try {
-    //     initializeProjectActions(); // هذا سيربط الأحداث مثل delete, duplicate (لا تستدعي createAndEditNewProject من هنا مباشرة)
-    // } catch (e) { console.error("APP: خطأ في تهيئة ProjectActions:", e); }
-    
-    // ... وهكذا
-
-    console.log("APP: mainAppInitializer - اكتملت التهيئة الأساسية. الوظائف الكاملة ستُضاف تدريجيًا.");
-    alert("تم تحميل التطبيق بوضع التشخيص الأساسي. زر 'إنشاء فيديو جديد' وزر تبديل الثيم يجب أن يعملا الآن بشكل مبدئي.");
+    console.log("APP.JS: App initialization complete.");
+    // يمكنك إضافة alert هنا إذا أردت تأكيدًا مرئيًا فوريًا
+    // alert("تم تحميل التطبيق الأساسي. تحقق من الـ Console للمزيد من المعلومات.");
 }
 
 // --- نقطة انطلاق التطبيق ---
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mainAppInitializer);
+    document.addEventListener('DOMContentLoaded', initializeApp);
 } else {
-    mainAppInitializer();
+    initializeApp();
 }
